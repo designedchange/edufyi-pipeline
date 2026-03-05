@@ -224,6 +224,7 @@ tr:hover { background: #f8fafc; }
     <div class="tab" onclick="switchTab('prep')">Meeting Prep</div>
     <div class="tab" onclick="switchTab('templates')">Email Templates</div>
     <div class="tab" onclick="switchTab('warroom')">Event War Room</div>
+    <div class="tab" onclick="switchTab('comms')">Comms Log</div>
     <div class="tab" onclick="switchTab('assets')">Doc Vault</div>
   </div>
 
@@ -348,6 +349,20 @@ tr:hover { background: #f8fafc; }
     <div id="warroom-content"></div>
   </div>
 
+  <!-- COMMS LOG -->
+  <div class="tab-content" id="tab-comms">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h2 style="font-size:18px">Communications Log</h2>
+      <button class="add-btn" onclick="openAddComm()">+ Log Communication</button>
+    </div>
+    <div class="filters" style="margin-bottom:14px">
+      <select id="comms-deal-filter" onchange="renderComms()"><option value="">All Deals</option></select>
+      <select id="comms-type-filter" onchange="renderComms()"><option value="">All Types</option><option value="Email">Email</option><option value="Call">Call</option><option value="Meeting">Meeting</option><option value="Message">Message</option><option value="FYI.AI">FYI.AI</option></select>
+      <select id="comms-person-filter" onchange="renderComms()"><option value="">All People</option></select>
+    </div>
+    <div class="timeline" id="comms-timeline"></div>
+  </div>
+
   <!-- DOC VAULT -->
   <div class="tab-content" id="tab-assets">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
@@ -376,6 +391,7 @@ tr:hover { background: #f8fafc; }
   <label>Next Step</label><input id="f-next">
   <label>Next Date</label><input type="date" id="f-date">
   <label>Est. Learners</label><input type="number" id="f-learners" placeholder="500">
+  <label>FYI.AI Project Link</label><input id="f-fyilink" placeholder="https://fyi.ai/u/...">
   <label>Notes</label><textarea id="f-notes"></textarea>
   <div class="modal-actions">
     <button class="btn-secondary" onclick="closeModal('deal-modal')">Cancel</button>
@@ -436,6 +452,29 @@ tr:hover { background: #f8fafc; }
   </div>
 </div></div>
 
+<!-- COMMS MODAL -->
+<div class="modal-overlay" id="comm-modal"><div class="modal">
+  <h2 id="comm-modal-title">Log Communication</h2>
+  <input type="hidden" id="c-id">
+  <label>Type</label>
+  <select id="c-type"><option value="Email">Email</option><option value="Call">Call</option><option value="Meeting">Meeting</option><option value="Message">Message</option><option value="FYI.AI">FYI.AI</option></select>
+  <label>Deal</label><select id="c-deal"><option value="">General</option></select>
+  <label>People Involved</label><input id="c-people" placeholder="e.g. Sean Hobson, will.i.am">
+  <label>Subject / Topic</label><input id="c-subject" placeholder="e.g. Follow-up on partnership terms">
+  <label>Direction</label><select id="c-direction"><option value="Outbound">Outbound (we sent)</option><option value="Inbound">Inbound (they sent)</option><option value="Internal">Internal</option></select>
+  <label>Date</label><input type="date" id="c-date">
+  <label>FYI.AI Link</label><input id="c-fyilink" placeholder="https://fyi.ai/u/...">
+  <label>Summary</label><textarea id="c-summary" placeholder="Key points, decisions, action items..."></textarea>
+  <label>Follow-up Needed?</label>
+  <select id="c-followup"><option value="">No</option><option value="Yes">Yes — add to tasks</option></select>
+  <label>Follow-up Task</label><input id="c-followup-task" placeholder="e.g. Send revised proposal by Friday">
+  <div class="modal-actions">
+    <button class="btn-secondary" onclick="closeModal('comm-modal')">Cancel</button>
+    <button class="btn-primary" onclick="saveComm()">Save</button>
+    <button class="btn-danger" id="btn-delete-comm" onclick="deleteComm()" style="display:none">Delete</button>
+  </div>
+</div></div>
+
 <script>
 const STAGES = ['Awareness','Conversation','Alignment','Proposal','Agreement','Active'];
 const STAGE_LABELS = { Awareness:'Awareness', Conversation:'Conversation', Alignment:'Alignment', Proposal:'Proposal', Agreement:'Agreement', Active:'Active Partnership' };
@@ -452,14 +491,20 @@ const PRODUCT_PRESETS = {
 
 let DATA = JSON.parse(localStorage.getItem('edufyi_data')) || {
   deals: [
-    { id:'d1', org:'Arden University', type:'Education', desc:'UK-based university — full product suite', stage:'Conversation', priority:'High', owner:'Sean Hobson', contact:'', nextStep:'Follow-up meeting', nextDate:'', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'', learners:2000, activity:[{date:'2026-03-01',text:'Initial outreach sent'},{date:'2026-02-20',text:'Created opportunity'}] },
-    { id:'d2', org:'Compton College', type:'Education', desc:'Community college — full suite', stage:'Conversation', priority:'High', owner:'will.i.am', contact:'', nextStep:'Campus visit', nextDate:'', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'', learners:1500, activity:[{date:'2026-03-02',text:'will.i.am intro call'},{date:'2026-02-15',text:'Created opportunity'}] },
-    { id:'d3', org:'AWS', type:'Technology', desc:'Platform infrastructure partnership', stage:'Conversation', priority:'High', owner:'Sean Hobson', contact:'', nextStep:'Technical alignment call', nextDate:'', products:['EDU.FYI'], notes:'', learners:0, activity:[{date:'2026-02-28',text:'Intro meeting completed'}] },
-    { id:'d4', org:'NVIDIA', type:'Technology', desc:'AI compute & classroom tech', stage:'Active', priority:'High', owner:'Lee Chan', contact:'', nextStep:'Quarterly review', nextDate:'2026-04-01', products:['EDU.FYI','Agentic Classroom'], notes:'', learners:0, activity:[{date:'2026-03-01',text:'Partnership active'},{date:'2026-02-01',text:'Agreement signed'}] },
-    { id:'d5', org:'LG', type:'Technology', desc:'Agentic Classroom hardware', stage:'Conversation', priority:'Medium', owner:'Sean Hobson', contact:'', nextStep:'Product demo', nextDate:'', products:['Agentic Classroom'], notes:'', learners:0, activity:[{date:'2026-02-25',text:'Initial conversation'}] },
-    { id:'d6', org:'Qualcomm', type:'Technology', desc:'Full suite tech partnership', stage:'Agreement', priority:'High', owner:'Sean Hobson', contact:'', nextStep:'Finalize terms', nextDate:'2026-03-15', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'', learners:0, activity:[{date:'2026-03-03',text:'Moved to Agreement'},{date:'2026-02-10',text:'Proposal submitted'}] },
-    { id:'d7', org:'Oden College', type:'Education', desc:'EDU.FYI platform adoption', stage:'Conversation', priority:'Medium', owner:'Sean Hobson', contact:'', nextStep:'Initial pitch', nextDate:'', products:['EDU.FYI'], notes:'', learners:800, activity:[{date:'2026-02-22',text:'Created opportunity'}] },
-    { id:'d8', org:'Arizona State University', type:'Education', desc:'Founding partner — full integration', stage:'Active', priority:'High', owner:'Sean Hobson', contact:'Michael Crow', nextStep:'Ongoing integration', nextDate:'', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'', learners:5000, activity:[{date:'2026-03-01',text:'Spring semester active'},{date:'2026-01-15',text:'Full launch'}] }
+    { id:'d1', org:'Arden University', type:'Education', desc:'UK-based university — full product suite', stage:'Conversation', priority:'High', owner:'Sean Hobson', contact:'', nextStep:'Follow-up meeting', nextDate:'', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'', learners:2000, fyiLink:'', activity:[{date:'2026-03-01',text:'Initial outreach sent'},{date:'2026-02-20',text:'Created opportunity'}] },
+    { id:'d2', org:'Compton College', type:'Education', desc:'Community college — full suite', stage:'Conversation', priority:'High', owner:'will.i.am', contact:'', nextStep:'Campus visit', nextDate:'', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'', learners:1500, fyiLink:'', activity:[{date:'2026-03-02',text:'will.i.am intro call'},{date:'2026-02-15',text:'Created opportunity'}] },
+    { id:'d3', org:'AWS', type:'Technology', desc:'Platform infrastructure partnership', stage:'Conversation', priority:'High', owner:'Sean Hobson', contact:'', nextStep:'Technical alignment call', nextDate:'', products:['EDU.FYI'], notes:'', learners:0, fyiLink:'', activity:[{date:'2026-02-28',text:'Intro meeting completed'}] },
+    { id:'d4', org:'NVIDIA', type:'Technology', desc:'AI compute & classroom tech', stage:'Active', priority:'High', owner:'Lee Chan', contact:'', nextStep:'Quarterly review', nextDate:'2026-04-01', products:['EDU.FYI','Agentic Classroom'], notes:'', learners:0, fyiLink:'', activity:[{date:'2026-03-01',text:'Partnership active'},{date:'2026-02-01',text:'Agreement signed'}] },
+    { id:'d5', org:'LG', type:'Technology', desc:'Agentic Classroom hardware', stage:'Conversation', priority:'Medium', owner:'Sean Hobson', contact:'', nextStep:'Product demo', nextDate:'', products:['Agentic Classroom'], notes:'', learners:0, fyiLink:'', activity:[{date:'2026-02-25',text:'Initial conversation'}] },
+    { id:'d6', org:'Qualcomm', type:'Technology', desc:'Full suite tech partnership', stage:'Agreement', priority:'High', owner:'Sean Hobson', contact:'', nextStep:'Finalize terms', nextDate:'2026-03-15', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'', learners:0, fyiLink:'', activity:[{date:'2026-03-03',text:'Moved to Agreement'},{date:'2026-02-10',text:'Proposal submitted'}] },
+    { id:'d7', org:'Oden College', type:'Education', desc:'EDU.FYI platform adoption', stage:'Conversation', priority:'Medium', owner:'Sean Hobson', contact:'', nextStep:'Initial pitch', nextDate:'', products:['EDU.FYI'], notes:'', learners:800, fyiLink:'', activity:[{date:'2026-02-22',text:'Created opportunity'}] },
+    { id:'d8', org:'Arizona State University', type:'Education', desc:'Founding partner — full integration', stage:'Active', priority:'High', owner:'Sean Hobson', contact:'Michael Crow', nextStep:'Ongoing integration', nextDate:'', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'', learners:5000, fyiLink:'', activity:[{date:'2026-03-01',text:'Spring semester active'},{date:'2026-01-15',text:'Full launch'}] }
+  ],
+  comms: [
+    { id:'c1', type:'Email', deal:'d1', people:'Sean Hobson', subject:'Arden initial outreach', direction:'Outbound', date:'2026-03-01', fyiLink:'', summary:'Sent intro email with EDU.FYI overview deck.', followup:'' },
+    { id:'c2', type:'Call', deal:'d2', people:'will.i.am, Sean Hobson', subject:'Compton College intro call', direction:'Outbound', date:'2026-03-02', fyiLink:'', summary:'will.i.am connected with president. Strong interest in campus visit.', followup:'Schedule campus visit' },
+    { id:'c3', type:'Meeting', deal:'d6', people:'Sean Hobson', subject:'Qualcomm terms review', direction:'Outbound', date:'2026-03-03', fyiLink:'', summary:'Reviewed partnership terms. Qualcomm aligned on full suite. Need to finalize rev share.', followup:'Send final terms doc' },
+    { id:'c4', type:'Email', deal:'d3', people:'Sean Hobson', subject:'AWS technical discussion', direction:'Inbound', date:'2026-02-28', fyiLink:'', summary:'AWS team responded positively to infrastructure partnership proposal. Scheduling technical deep-dive.', followup:'' }
   ],
   people: [
     { id:'p1', name:'Sean Hobson', role:'AVP & Chief Design Officer', org:'EdPlus at ASU', email:'sean.hobson@asu.edu', phone:'', notes:'EDU.FYI co-founder, leads biz dev' },
@@ -517,7 +562,7 @@ if (sessionStorage.getItem('edufyi_auth') === '1') {
 }
 
 // TABS
-const ALL_TABS = ['pipeline','table','tasks','activity','people','economics','forecast','prep','templates','warroom','assets'];
+const ALL_TABS = ['pipeline','table','tasks','activity','people','economics','forecast','prep','templates','warroom','comms','assets'];
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', ALL_TABS[i] === tab));
   document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
@@ -530,6 +575,7 @@ function switchTab(tab) {
   if (tab === 'warroom') renderWarRoom();
   if (tab === 'tasks') renderTasks();
   if (tab === 'activity') renderTimeline();
+  if (tab === 'comms') { populateCommsFilters(); renderComms(); }
 }
 
 // FILTERS
@@ -582,6 +628,7 @@ function renderKanban() {
         <div class="meta"><span class="priority ${d.priority.toLowerCase()}">${d.priority}</span><span style="color:var(--muted)">${d.type}</span></div>
         <div class="owner-badge"><span class="owner-avatar">${ini}</span>${d.owner||'Unassigned'}</div>
         ${d.nextStep?`<div style="margin-top:4px;font-size:10px;color:var(--muted)">Next: ${d.nextStep}</div>`:''}
+        ${d.fyiLink?`<div style="margin-top:4px"><a href="${d.fyiLink}" target="_blank" onclick="event.stopPropagation()" style="font-size:10px;color:var(--purple);font-weight:600;text-decoration:none">FYI.AI Project &rarr;</a></div>`:''}
       </div>`;
     });
     html += '</div>';
@@ -605,10 +652,10 @@ function onDrop(e) {
 // TABLE
 function renderTable() {
   const deals = getFilteredDeals();
-  let html = '<thead><tr><th>Organization</th><th>Products</th><th>Stage</th><th>Priority</th><th>Owner</th><th>Learners</th><th>Next Step</th></tr></thead><tbody>';
+  let html = '<thead><tr><th>Organization</th><th>Products</th><th>Stage</th><th>Priority</th><th>Owner</th><th>Learners</th><th>Next Step</th><th>FYI.AI</th></tr></thead><tbody>';
   deals.forEach(d => {
     const prods = d.products ? d.products.map(p => `<span class="product-tag">${p}</span>`).join(' ') : '';
-    html += `<tr onclick="openEditDeal('${d.id}')" style="cursor:pointer"><td><strong>${d.org}</strong><br><span style="color:var(--muted);font-size:11px">${d.type}</span></td><td>${prods}</td><td><span class="stage-badge" style="background:${STAGE_COLORS[d.stage]}20;color:${STAGE_COLORS[d.stage]}">${STAGE_LABELS[d.stage]}</span></td><td><span class="priority ${d.priority.toLowerCase()}">${d.priority}</span></td><td>${d.owner||'—'}</td><td>${d.learners||'—'}</td><td>${d.nextStep||'—'}</td></tr>`;
+    html += `<tr onclick="openEditDeal('${d.id}')" style="cursor:pointer"><td><strong>${d.org}</strong><br><span style="color:var(--muted);font-size:11px">${d.type}</span></td><td>${prods}</td><td><span class="stage-badge" style="background:${STAGE_COLORS[d.stage]}20;color:${STAGE_COLORS[d.stage]}">${STAGE_LABELS[d.stage]}</span></td><td><span class="priority ${d.priority.toLowerCase()}">${d.priority}</span></td><td>${d.owner||'—'}</td><td>${d.learners||'—'}</td><td>${d.nextStep||'—'}</td><td>${d.fyiLink?`<a href="${d.fyiLink}" target="_blank" onclick="event.stopPropagation()" style="color:var(--purple);font-size:11px;font-weight:600">Open</a>`:'—'}</td></tr>`;
   });
   document.getElementById('deal-table').innerHTML = html + '</tbody>';
 }
@@ -706,9 +753,9 @@ document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('cli
 document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('show')); });
 
 // DEAL MODAL
-function openAddDeal() { ['f-id','f-org','f-desc','f-contact','f-next','f-date','f-notes','f-learners'].forEach(id=>document.getElementById(id).value=''); document.getElementById('f-type').value='Education'; document.getElementById('f-stage').value='Awareness'; document.getElementById('f-priority').value='High'; document.getElementById('f-owner').value=''; Array.from(document.getElementById('f-products').options).forEach(o=>o.selected=false); document.getElementById('btn-delete').style.display='none'; document.getElementById('modal-title').textContent='Add Opportunity'; populateOwnerSelect(); document.getElementById('deal-modal').classList.add('show'); }
-function openEditDeal(id) { const d=DATA.deals.find(x=>x.id===id); if(!d) return; document.getElementById('modal-title').textContent='Edit: '+d.org; document.getElementById('f-id').value=d.id; document.getElementById('f-org').value=d.org; document.getElementById('f-type').value=d.type; document.getElementById('f-desc').value=d.desc||''; document.getElementById('f-stage').value=d.stage; document.getElementById('f-priority').value=d.priority; document.getElementById('f-contact').value=d.contact||''; document.getElementById('f-next').value=d.nextStep||''; document.getElementById('f-date').value=d.nextDate||''; document.getElementById('f-notes').value=d.notes||''; document.getElementById('f-learners').value=d.learners||''; populateOwnerSelect(); document.getElementById('f-owner').value=d.owner||''; Array.from(document.getElementById('f-products').options).forEach(o=>{o.selected=d.products&&d.products.includes(o.value);}); document.getElementById('btn-delete').style.display='block'; document.getElementById('deal-modal').classList.add('show'); }
-function saveDeal() { const id=document.getElementById('f-id').value; const products=Array.from(document.getElementById('f-products').selectedOptions).map(o=>o.value); const dd={org:document.getElementById('f-org').value,type:document.getElementById('f-type').value,desc:document.getElementById('f-desc').value,stage:document.getElementById('f-stage').value,priority:document.getElementById('f-priority').value,owner:document.getElementById('f-owner').value,contact:document.getElementById('f-contact').value,nextStep:document.getElementById('f-next').value,nextDate:document.getElementById('f-date').value,notes:document.getElementById('f-notes').value,learners:parseInt(document.getElementById('f-learners').value)||0,products}; if(id){const deal=DATA.deals.find(d=>d.id===id);Object.assign(deal,dd);deal.activity=deal.activity||[];deal.activity.unshift({date:new Date().toISOString().slice(0,10),text:'Updated deal details'});}else{dd.id='d'+Date.now();dd.activity=[{date:new Date().toISOString().slice(0,10),text:'Created opportunity'}];DATA.deals.push(dd);} saveData(); closeModal('deal-modal'); render(); }
+function openAddDeal() { ['f-id','f-org','f-desc','f-contact','f-next','f-date','f-notes','f-learners','f-fyilink'].forEach(id=>document.getElementById(id).value=''); document.getElementById('f-type').value='Education'; document.getElementById('f-stage').value='Awareness'; document.getElementById('f-priority').value='High'; document.getElementById('f-owner').value=''; Array.from(document.getElementById('f-products').options).forEach(o=>o.selected=false); document.getElementById('btn-delete').style.display='none'; document.getElementById('modal-title').textContent='Add Opportunity'; populateOwnerSelect(); document.getElementById('deal-modal').classList.add('show'); }
+function openEditDeal(id) { const d=DATA.deals.find(x=>x.id===id); if(!d) return; document.getElementById('modal-title').textContent='Edit: '+d.org; document.getElementById('f-id').value=d.id; document.getElementById('f-org').value=d.org; document.getElementById('f-type').value=d.type; document.getElementById('f-desc').value=d.desc||''; document.getElementById('f-stage').value=d.stage; document.getElementById('f-priority').value=d.priority; document.getElementById('f-contact').value=d.contact||''; document.getElementById('f-next').value=d.nextStep||''; document.getElementById('f-date').value=d.nextDate||''; document.getElementById('f-notes').value=d.notes||''; document.getElementById('f-learners').value=d.learners||''; document.getElementById('f-fyilink').value=d.fyiLink||''; populateOwnerSelect(); document.getElementById('f-owner').value=d.owner||''; Array.from(document.getElementById('f-products').options).forEach(o=>{o.selected=d.products&&d.products.includes(o.value);}); document.getElementById('btn-delete').style.display='block'; document.getElementById('deal-modal').classList.add('show'); }
+function saveDeal() { const id=document.getElementById('f-id').value; const products=Array.from(document.getElementById('f-products').selectedOptions).map(o=>o.value); const dd={org:document.getElementById('f-org').value,type:document.getElementById('f-type').value,desc:document.getElementById('f-desc').value,stage:document.getElementById('f-stage').value,priority:document.getElementById('f-priority').value,owner:document.getElementById('f-owner').value,contact:document.getElementById('f-contact').value,nextStep:document.getElementById('f-next').value,nextDate:document.getElementById('f-date').value,notes:document.getElementById('f-notes').value,learners:parseInt(document.getElementById('f-learners').value)||0,fyiLink:document.getElementById('f-fyilink').value,products}; if(id){const deal=DATA.deals.find(d=>d.id===id);Object.assign(deal,dd);deal.activity=deal.activity||[];deal.activity.unshift({date:new Date().toISOString().slice(0,10),text:'Updated deal details'});}else{dd.id='d'+Date.now();dd.activity=[{date:new Date().toISOString().slice(0,10),text:'Created opportunity'}];DATA.deals.push(dd);} saveData(); closeModal('deal-modal'); render(); }
 function deleteDeal() { const id=document.getElementById('f-id').value; if(id&&confirm('Remove this opportunity?')){DATA.deals=DATA.deals.filter(d=>d.id!==id);saveData();closeModal('deal-modal');render();} }
 
 // PERSON MODAL
@@ -885,6 +932,147 @@ function renderWarRoom() {
     </div>`;
   });
   document.getElementById('warroom-content').innerHTML = html || '<p style="color:var(--muted)">No events configured.</p>';
+}
+
+// COMMS LOG
+function populateCommsFilters() {
+  const dealSel = document.getElementById('comms-deal-filter');
+  const personSel = document.getElementById('comms-person-filter');
+  const dv = dealSel.value, pv = personSel.value;
+  dealSel.innerHTML = '<option value="">All Deals</option>' + DATA.deals.map(d => `<option value="${d.id}">${d.org}</option>`).join('');
+  const people = [...new Set((DATA.comms||[]).flatMap(c => c.people.split(',').map(p => p.trim())).filter(Boolean))];
+  personSel.innerHTML = '<option value="">All People</option>' + people.map(p => `<option value="${p}">${p}</option>`).join('');
+  dealSel.value = dv; personSel.value = pv;
+}
+
+function renderComms() {
+  const comms = DATA.comms || [];
+  const dealFilter = document.getElementById('comms-deal-filter').value;
+  const typeFilter = document.getElementById('comms-type-filter').value;
+  const personFilter = document.getElementById('comms-person-filter').value;
+  let filtered = comms;
+  if (dealFilter) filtered = filtered.filter(c => c.deal === dealFilter);
+  if (typeFilter) filtered = filtered.filter(c => c.type === typeFilter);
+  if (personFilter) filtered = filtered.filter(c => c.people && c.people.includes(personFilter));
+  filtered.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+  const typeIcons = { Email: '\u2709\uFE0F', Call: '\uD83D\uDCDE', Meeting: '\uD83E\uDD1D', Message: '\uD83D\uDCAC', 'FYI.AI': '\uD83D\uDD17' };
+  const typeColors = { Email: '#3b82f6', Call: '#16a34a', Meeting: '#7c3aed', Message: '#f59e0b', 'FYI.AI': '#ec4899' };
+  const dirIcons = { Outbound: '\u2197\uFE0F', Inbound: '\u2199\uFE0F', Internal: '\uD83D\uDD04' };
+
+  let html = '';
+  filtered.forEach(c => {
+    const deal = DATA.deals.find(d => d.id === c.deal);
+    html += `<div class="timeline-item" style="cursor:pointer" onclick="openEditComm('${c.id}')">
+      <div class="timeline-dot" style="background:${typeColors[c.type] || '#94a3b8'}"></div>
+      <div class="timeline-content">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div class="tl-title">${dirIcons[c.direction] || ''} ${c.subject || 'No subject'}</div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <span style="font-size:10px;padding:2px 6px;border-radius:4px;background:${typeColors[c.type]}20;color:${typeColors[c.type]};font-weight:600">${c.type}</span>
+          </div>
+        </div>
+        <div class="tl-detail" style="margin-top:4px">${c.summary || ''}</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px;font-size:11px;color:var(--muted)">
+          <span>${c.date || 'No date'}</span>
+          ${deal ? `<span class="deal-pill">${deal.org}</span>` : ''}
+          <span>${c.people || ''}</span>
+          ${c.fyiLink ? `<a href="${c.fyiLink}" target="_blank" onclick="event.stopPropagation()" style="color:var(--purple);font-weight:600;text-decoration:none">FYI.AI &rarr;</a>` : ''}
+        </div>
+        ${c.followup ? `<div style="margin-top:4px;font-size:11px;color:var(--orange);font-weight:600">Follow-up: ${c.followup}</div>` : ''}
+      </div>
+    </div>`;
+  });
+  if (!html) html = '<p style="color:var(--muted);font-size:13px">No communications logged yet. Click "+ Log Communication" to start tracking.</p>';
+  document.getElementById('comms-timeline').innerHTML = html;
+}
+
+function populateCommDealSelect() {
+  const s = document.getElementById('c-deal');
+  s.innerHTML = '<option value="">General</option>' + DATA.deals.map(d => `<option value="${d.id}">${d.org}</option>`).join('');
+}
+
+function openAddComm() {
+  ['c-id', 'c-people', 'c-subject', 'c-fyilink', 'c-summary', 'c-followup-task'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('c-type').value = 'Email';
+  document.getElementById('c-deal').value = '';
+  document.getElementById('c-direction').value = 'Outbound';
+  document.getElementById('c-date').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('c-followup').value = '';
+  document.getElementById('btn-delete-comm').style.display = 'none';
+  document.getElementById('comm-modal-title').textContent = 'Log Communication';
+  populateCommDealSelect();
+  document.getElementById('comm-modal').classList.add('show');
+}
+
+function openEditComm(id) {
+  const c = (DATA.comms || []).find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('comm-modal-title').textContent = 'Edit Communication';
+  document.getElementById('c-id').value = c.id;
+  document.getElementById('c-type').value = c.type || 'Email';
+  document.getElementById('c-people').value = c.people || '';
+  document.getElementById('c-subject').value = c.subject || '';
+  document.getElementById('c-direction').value = c.direction || 'Outbound';
+  document.getElementById('c-date').value = c.date || '';
+  document.getElementById('c-fyilink').value = c.fyiLink || '';
+  document.getElementById('c-summary').value = c.summary || '';
+  document.getElementById('c-followup').value = c.followup ? 'Yes' : '';
+  document.getElementById('c-followup-task').value = c.followup || '';
+  populateCommDealSelect();
+  document.getElementById('c-deal').value = c.deal || '';
+  document.getElementById('btn-delete-comm').style.display = 'block';
+  document.getElementById('comm-modal').classList.add('show');
+}
+
+function saveComm() {
+  const id = document.getElementById('c-id').value;
+  const followupOpt = document.getElementById('c-followup').value;
+  const followupTask = document.getElementById('c-followup-task').value;
+  const cd = {
+    type: document.getElementById('c-type').value,
+    deal: document.getElementById('c-deal').value,
+    people: document.getElementById('c-people').value,
+    subject: document.getElementById('c-subject').value,
+    direction: document.getElementById('c-direction').value,
+    date: document.getElementById('c-date').value,
+    fyiLink: document.getElementById('c-fyilink').value,
+    summary: document.getElementById('c-summary').value,
+    followup: followupOpt === 'Yes' ? followupTask : ''
+  };
+  if (!DATA.comms) DATA.comms = [];
+  if (id) {
+    const c = DATA.comms.find(x => x.id === id);
+    Object.assign(c, cd);
+  } else {
+    cd.id = 'c' + Date.now();
+    DATA.comms.push(cd);
+    // Add to deal activity
+    if (cd.deal) {
+      const deal = DATA.deals.find(d => d.id === cd.deal);
+      if (deal) { deal.activity = deal.activity || []; deal.activity.unshift({ date: cd.date, text: cd.type + ': ' + (cd.subject || 'Communication logged') }); }
+    }
+  }
+  // Auto-create task from follow-up
+  if (followupOpt === 'Yes' && followupTask && !id) {
+    if (!DATA.tasks) DATA.tasks = [];
+    DATA.tasks.push({ id: 't' + Date.now(), title: followupTask, deal: cd.deal, owner: cd.people.split(',')[0].trim(), due: '', priority: 'High', status: 'To Do', notes: 'Auto-created from comms log: ' + (cd.subject || '') });
+  }
+  saveData();
+  closeModal('comm-modal');
+  renderComms();
+  renderTasks();
+  renderTimeline();
+}
+
+function deleteComm() {
+  const id = document.getElementById('c-id').value;
+  if (id && confirm('Delete this communication?')) {
+    DATA.comms = (DATA.comms || []).filter(c => c.id !== id);
+    saveData();
+    closeModal('comm-modal');
+    renderComms();
+  }
 }
 </script>
 </body>
