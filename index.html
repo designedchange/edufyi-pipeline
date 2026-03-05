@@ -197,6 +197,7 @@ tr:hover { background: #f8fafc; }
     <p>Customer Pipeline & Deal Management</p>
     <div id="login-error">Incorrect password. Try again.</div>
     <input type="password" id="login-pass" placeholder="Enter password" onkeydown="if(event.key==='Enter')checkLogin()">
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin-bottom:16px;cursor:pointer;justify-content:center"><input type="checkbox" id="remember-me" style="width:16px;height:16px;margin:0;cursor:pointer"> Remember me on this device</label>
     <button onclick="checkLogin()">Access Dashboard</button>
   </div>
 </div>
@@ -580,18 +581,23 @@ function saveData() { localStorage.setItem('edufyi_data', JSON.stringify(DATA));
 // AUTH
 function checkLogin() {
   const input = document.getElementById('login-pass').value;
+  const remember = document.getElementById('remember-me').checked;
+  const storage = remember ? localStorage : sessionStorage;
   const hash = Array.from(input).reduce((h, c) => ((h << 5) - h + c.charCodeAt(0)) | 0, 0);
   if (hash === 1666762267) {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('main-app').style.display = 'block';
-    sessionStorage.setItem('edufyi_auth', '1');
+    storage.setItem('edufyi_auth', '1');
+    if (remember) localStorage.setItem('edufyi_remember', '1');
     render();
   } else {
     document.getElementById('login-error').style.display = 'block';
     document.getElementById('login-pass').value = '';
   }
 }
-if (sessionStorage.getItem('edufyi_auth') === '1') {
+const remembered = localStorage.getItem('edufyi_remember') === '1';
+const authStore = remembered ? localStorage : sessionStorage;
+if (authStore.getItem('edufyi_auth') === '1') {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('main-app').style.display = 'block';
   setTimeout(render, 50);

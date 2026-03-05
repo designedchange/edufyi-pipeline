@@ -197,6 +197,7 @@ tr:hover { background: #f8fafc; }
     <p>Customer Pipeline & Deal Management</p>
     <div id="login-error">Incorrect password. Try again.</div>
     <input type="password" id="login-pass" placeholder="Enter password" onkeydown="if(event.key==='Enter')checkLogin()">
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin-bottom:16px;cursor:pointer;justify-content:center"><input type="checkbox" id="remember-me" style="width:16px;height:16px;margin:0;cursor:pointer"> Remember me on this device</label>
     <button onclick="checkLogin()">Access Dashboard</button>
   </div>
 </div>
@@ -516,7 +517,7 @@ const PRODUCT_PRESETS = {
   'Bundle': { revPerLearner: 350, platformCost: 75, contentCost: 40, supportCost: 20, implFee: 50000 }
 };
 
-let AUTH_TOKEN = sessionStorage.getItem('edufyi_token') || '';
+let AUTH_TOKEN = sessionStorage.getItem('edufyi_token') || localStorage.getItem('edufyi_token') || '';
 const API_BASE = ''; // Same origin — Vercel serves both
 
 let DATA = JSON.parse(localStorage.getItem('edufyi_data')) || {
@@ -612,6 +613,8 @@ async function loadDataFromBackend() {
 // AUTH
 async function checkLogin() {
   const input = document.getElementById('login-pass').value;
+  const remember = document.getElementById('remember-me').checked;
+  const storage = remember ? localStorage : sessionStorage;
   try {
     const res = await fetch(API_BASE + '/api/auth', {
       method: 'POST',
@@ -621,11 +624,11 @@ async function checkLogin() {
     if (res.ok) {
       const { token } = await res.json();
       AUTH_TOKEN = token;
-      sessionStorage.setItem('edufyi_token', token);
-      sessionStorage.setItem('edufyi_auth', '1');
+      storage.setItem('edufyi_token', token);
+      storage.setItem('edufyi_auth', '1');
+      if (remember) localStorage.setItem('edufyi_remember', '1');
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('main-app').style.display = 'block';
-      // Load fresh data from Supabase
       await loadDataFromBackend();
       render();
     } else {
@@ -638,7 +641,8 @@ async function checkLogin() {
     if (hash === 1666762267) {
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('main-app').style.display = 'block';
-      sessionStorage.setItem('edufyi_auth', '1');
+      storage.setItem('edufyi_auth', '1');
+      if (remember) localStorage.setItem('edufyi_remember', '1');
       render();
     } else {
       document.getElementById('login-error').style.display = 'block';
@@ -647,9 +651,11 @@ async function checkLogin() {
   }
 }
 
-// Auto-login if token exists
-if (sessionStorage.getItem('edufyi_auth') === '1') {
-  AUTH_TOKEN = sessionStorage.getItem('edufyi_token') || '';
+// Auto-login if token exists (check both session and local storage for "remember me")
+const remembered = localStorage.getItem('edufyi_remember') === '1';
+const authStore = remembered ? localStorage : sessionStorage;
+if (authStore.getItem('edufyi_auth') === '1') {
+  AUTH_TOKEN = authStore.getItem('edufyi_token') || '';
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('main-app').style.display = 'block';
   // Try to refresh from backend
