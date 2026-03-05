@@ -353,7 +353,10 @@ tr:hover { background: #f8fafc; }
   <div class="tab-content" id="tab-comms">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
       <h2 style="font-size:18px">Communications Log</h2>
-      <button class="add-btn" onclick="openAddComm()">+ Log Communication</button>
+      <div style="display:flex;gap:8px">
+        <button class="add-btn" style="background:#7c3aed" onclick="openEmailImport()">&#x1f4e7; Paste Email</button>
+        <button class="add-btn" onclick="openAddComm()">+ Log Communication</button>
+      </div>
     </div>
     <div class="filters" style="margin-bottom:14px">
       <select id="comms-deal-filter" onchange="renderComms()"><option value="">All Deals</option></select>
@@ -475,6 +478,30 @@ tr:hover { background: #f8fafc; }
   </div>
 </div></div>
 
+<!-- EMAIL IMPORT MODAL -->
+<div class="modal-overlay" id="email-import-modal"><div class="modal" style="max-width:700px">
+  <h2>Import Email to Comms Log</h2>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Paste a full email thread below. We'll extract the key details for you to review and save.</p>
+  <label>Link to Deal</label>
+  <select id="ei-deal"><option value="">General</option></select>
+  <label>Paste Email Content</label>
+  <textarea id="ei-raw" style="min-height:200px;font-size:12px" placeholder="Paste the full email thread here..."></textarea>
+  <div id="ei-preview" style="display:none;margin-top:16px;background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:16px">
+    <h3 style="font-size:14px;margin-bottom:10px">Extracted Details (edit before saving)</h3>
+    <label>People Involved</label><input id="ei-people">
+    <label>Subject</label><input id="ei-subject">
+    <label>Date</label><input type="date" id="ei-date">
+    <label>Direction</label><select id="ei-direction"><option value="Inbound">Inbound</option><option value="Outbound">Outbound</option><option value="Internal">Internal</option></select>
+    <label>Summary</label><textarea id="ei-summary" style="min-height:80px"></textarea>
+    <label>Follow-up Needed?</label><input id="ei-followup" placeholder="Leave blank if none">
+  </div>
+  <div class="modal-actions">
+    <button class="btn-secondary" onclick="closeModal('email-import-modal')">Cancel</button>
+    <button class="btn-primary" style="background:#7c3aed" onclick="parseEmailImport()" id="ei-parse-btn">Extract Details</button>
+    <button class="btn-primary" onclick="saveEmailImport()" id="ei-save-btn" style="display:none">Save to Comms Log</button>
+  </div>
+</div></div>
+
 <script>
 const STAGES = ['Awareness','Conversation','Alignment','Proposal','Agreement','Active'];
 const STAGE_LABELS = { Awareness:'Awareness', Conversation:'Conversation', Alignment:'Alignment', Proposal:'Proposal', Agreement:'Agreement', Active:'Active Partnership' };
@@ -496,7 +523,7 @@ let DATA = JSON.parse(localStorage.getItem('edufyi_data')) || {
     { id:'d3', org:'AWS', type:'Technology', desc:'Platform infrastructure partnership', stage:'Conversation', priority:'High', owner:'Sean Hobson', contact:'', nextStep:'Technical alignment call', nextDate:'', products:['EDU.FYI'], notes:'', learners:0, fyiLink:'', activity:[{date:'2026-02-28',text:'Intro meeting completed'}] },
     { id:'d4', org:'NVIDIA', type:'Technology', desc:'AI compute & classroom tech', stage:'Active', priority:'High', owner:'Lee Chan', contact:'', nextStep:'Quarterly review', nextDate:'2026-04-01', products:['EDU.FYI','Agentic Classroom'], notes:'', learners:0, fyiLink:'', activity:[{date:'2026-03-01',text:'Partnership active'},{date:'2026-02-01',text:'Agreement signed'}] },
     { id:'d5', org:'LG', type:'Technology', desc:'Agentic Classroom hardware', stage:'Conversation', priority:'Medium', owner:'Sean Hobson', contact:'', nextStep:'Product demo', nextDate:'', products:['Agentic Classroom'], notes:'', learners:0, fyiLink:'', activity:[{date:'2026-02-25',text:'Initial conversation'}] },
-    { id:'d6', org:'Qualcomm', type:'Technology', desc:'Full suite tech partnership', stage:'Agreement', priority:'High', owner:'Sean Hobson', contact:'', nextStep:'Finalize terms', nextDate:'2026-03-15', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'', learners:0, fyiLink:'', activity:[{date:'2026-03-03',text:'Moved to Agreement'},{date:'2026-02-10',text:'Proposal submitted'}] },
+    { id:'d6', org:'Qualcomm', type:'Technology', desc:'3-phase partnership: Edge AI curriculum + Snapdragon devices + Mobile/XR. Qualcomm provides hardware & AI certificate; EDU.FYI is the student platform. Key narrative: on-device AI making student agents faster, more private, more powerful.', stage:'Agreement', priority:'High', owner:'Lee Chan', contact:'Rodrigo Caruso Neves do Amaral', nextStep:'Alignment call to discuss counter-proposal & narrative framing', nextDate:'2026-03-15', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'Phase 1: AI curriculum + Qualcomm Certificate (current semester) — counter: certificate should connect to EDU.FYI agent work, not standalone Snapdragon course. Phase 2: Device program (next semester) — counter: consider AI glasses/tablets instead of laptops (students already have laptops), lead with student use cases not hardware. Phase 3: Mobile + XR (2027) — counter: ground in learning scenarios (exam prep agents on phone, immersive nursing/engineering). Key contacts: John Smee, Rodrigo Amaral, Vijay Shirsathe, Hemanth Sampath, Patrick Costello.', learners:5000, fyiLink:'', activity:[{date:'2026-03-05',text:'Counter-proposal sent by Lee Chan — reframe around student experience & EDU.FYI platform'},{date:'2026-02-12',text:'Qualcomm sent 3-phase brief (Rodrigo Amaral) — AI curriculum, Snapdragon laptops, Mobile/XR'},{date:'2026-03-03',text:'Moved to Agreement'},{date:'2026-02-10',text:'Proposal submitted'}] },
     { id:'d7', org:'Oden College', type:'Education', desc:'EDU.FYI platform adoption', stage:'Conversation', priority:'Medium', owner:'Sean Hobson', contact:'', nextStep:'Initial pitch', nextDate:'', products:['EDU.FYI'], notes:'', learners:800, fyiLink:'', activity:[{date:'2026-02-22',text:'Created opportunity'}] },
     { id:'d8', org:'Arizona State University', type:'Education', desc:'Founding partner — full integration', stage:'Active', priority:'High', owner:'Sean Hobson', contact:'Michael Crow', nextStep:'Ongoing integration', nextDate:'', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'', learners:5000, fyiLink:'', activity:[{date:'2026-03-01',text:'Spring semester active'},{date:'2026-01-15',text:'Full launch'}] }
   ],
@@ -504,12 +531,19 @@ let DATA = JSON.parse(localStorage.getItem('edufyi_data')) || {
     { id:'c1', type:'Email', deal:'d1', people:'Sean Hobson', subject:'Arden initial outreach', direction:'Outbound', date:'2026-03-01', fyiLink:'', summary:'Sent intro email with EDU.FYI overview deck.', followup:'' },
     { id:'c2', type:'Call', deal:'d2', people:'will.i.am, Sean Hobson', subject:'Compton College intro call', direction:'Outbound', date:'2026-03-02', fyiLink:'', summary:'will.i.am connected with president. Strong interest in campus visit.', followup:'Schedule campus visit' },
     { id:'c3', type:'Meeting', deal:'d6', people:'Sean Hobson', subject:'Qualcomm terms review', direction:'Outbound', date:'2026-03-03', fyiLink:'', summary:'Reviewed partnership terms. Qualcomm aligned on full suite. Need to finalize rev share.', followup:'Send final terms doc' },
-    { id:'c4', type:'Email', deal:'d3', people:'Sean Hobson', subject:'AWS technical discussion', direction:'Inbound', date:'2026-02-28', fyiLink:'', summary:'AWS team responded positively to infrastructure partnership proposal. Scheduling technical deep-dive.', followup:'' }
+    { id:'c4', type:'Email', deal:'d3', people:'Sean Hobson', subject:'AWS technical discussion', direction:'Inbound', date:'2026-02-28', fyiLink:'', summary:'AWS team responded positively to infrastructure partnership proposal. Scheduling technical deep-dive.', followup:'' },
+    { id:'c5', type:'Email', deal:'d6', people:'Rodrigo Amaral, Lee Chan, John Smee, Vijay Shirsathe, Hemanth Sampath, Patrick Costello', subject:'ASU/FYI/Qualcomm 3-phase partnership brief', direction:'Inbound', date:'2026-02-12', fyiLink:'', summary:'Qualcomm sent formal 3-phase brief. Phase 1: AI curriculum + Qualcomm Certificate (current semester). Phase 2: Snapdragon laptop program (next semester). Phase 3: Mobile + XR exploration (2027). Rodrigo added Sean to the thread.', followup:'Review brief and prepare counter-proposal' },
+    { id:'c6', type:'Email', deal:'d6', people:'Lee Chan, Sean Hobson, John Smee, Rodrigo Amaral', subject:'Counter-proposal: Reframe around student experience & EDU.FYI', direction:'Outbound', date:'2026-03-05', fyiLink:'', summary:'Lee sent counter-proposal. Key points: (1) Phase 1 certificate should connect to EDU.FYI agent work, not standalone Snapdragon course. (2) Phase 2: consider AI glasses/tablets instead of laptops — students already carry laptops. Lead with student use cases, not hardware specs. Position focus groups as student voice, not device feedback. (3) Phase 3: ground Mobile/XR in learning scenarios (exam prep agents, immersive nursing/engineering). Overall narrative: center on student outcomes with EDU.FYI as the platform. Requested alignment call before taking further.', followup:'Schedule alignment call with Qualcomm team' }
   ],
   people: [
     { id:'p1', name:'Sean Hobson', role:'AVP & Chief Design Officer', org:'EdPlus at ASU', email:'sean.hobson@asu.edu', phone:'', notes:'EDU.FYI co-founder, leads biz dev' },
     { id:'p2', name:'will.i.am', role:'Co-founder', org:'EDU.FYI / FYI.AI', email:'', phone:'', notes:'Key evangelist, HBCUs & community colleges' },
-    { id:'p3', name:'Lee Chan', role:'FYI Leader', org:'FYI.AI', email:'', phone:'', notes:'Manages technology partnerships' }
+    { id:'p3', name:'Lee Chan', role:'COO', org:'FYI.AI', email:'lee@fyi.fyi', phone:'917.553.7533', notes:'Manages technology partnerships. Leading Qualcomm relationship. MHC Make it Happen Captain.' },
+    { id:'p4', name:'Rodrigo Caruso Neves do Amaral', role:'Partnership Lead', org:'Qualcomm', email:'amaral@qti.qualcomm.com', phone:'', notes:'Primary Qualcomm contact for ASU/FYI collaboration. Drafted 3-phase partnership brief.' },
+    { id:'p5', name:'John Smee', role:'Executive', org:'Qualcomm', email:'jsmee@qti.qualcomm.com', phone:'', notes:'Senior Qualcomm stakeholder on EDU.FYI partnership.' },
+    { id:'p6', name:'Vijay Shirsathe', role:'Technical Lead', org:'Qualcomm', email:'vshirsat@qti.qualcomm.com', phone:'', notes:'Qualcomm technical team — ASU/FYI collaboration.' },
+    { id:'p7', name:'Hemanth Sampath', role:'Technical Lead', org:'Qualcomm', email:'hsampath@qti.qualcomm.com', phone:'', notes:'Qualcomm technical team — ASU/FYI collaboration.' },
+    { id:'p8', name:'Patrick Costello', role:'Team Member', org:'Qualcomm', email:'pcostell@qti.qualcomm.com', phone:'', notes:'Qualcomm team — ASU/FYI collaboration.' }
   ],
   events: [
     { id:'e1', name:'ASU+GSV Summit 2026', date:'2026-04-06', endDate:'2026-04-08', location:'San Diego, CA', notes:'Major pitch event', partners:['Arden University','Compton College','AWS','Qualcomm'], pitchPlan:'will.i.am keynote + booth demos', followups:[] },
@@ -527,7 +561,9 @@ let DATA = JSON.parse(localStorage.getItem('edufyi_data')) || {
     { id:'t3', title:'Finalize Qualcomm terms', deal:'d6', owner:'Sean Hobson', due:'2026-03-15', priority:'High', status:'In Progress', notes:'' },
     { id:'t4', title:'Prep ASU+GSV booth materials', deal:'', owner:'Sean Hobson', due:'2026-03-25', priority:'High', status:'To Do', notes:'' },
     { id:'t5', title:'AWS technical alignment call', deal:'d3', owner:'Sean Hobson', due:'2026-03-12', priority:'Medium', status:'To Do', notes:'' },
-    { id:'t6', title:'LG product demo prep', deal:'d5', owner:'Lee Chan', due:'2026-03-20', priority:'Medium', status:'To Do', notes:'' }
+    { id:'t6', title:'LG product demo prep', deal:'d5', owner:'Lee Chan', due:'2026-03-20', priority:'Medium', status:'To Do', notes:'' },
+    { id:'t7', title:'Schedule Qualcomm alignment call (Lee, Sean, Rodrigo, John)', deal:'d6', owner:'Lee Chan', due:'2026-03-10', priority:'High', status:'To Do', notes:'Discuss counter-proposal narrative before taking partnership further' },
+    { id:'t8', title:'Prepare Qualcomm narrative deck — student outcomes + EDU.FYI platform story', deal:'d6', owner:'Sean Hobson', due:'2026-03-14', priority:'High', status:'To Do', notes:'Reframe 3-phase plan around student experience. Needed before next Qualcomm meeting.' }
   ],
   templates: [
     { id:'tm1', name:'Initial Outreach — Education', stage:'Awareness', type:'Education', subject:'EDU.FYI — Transforming [Institution] with AI-Powered Learning', body:'Hi [Name],\n\nI\'m reaching out from EDU.FYI, a platform co-founded by Michael Crow and will.i.am that\'s reimagining how learners engage with education through agentic AI.\n\nWe\'re working with institutions like ASU to deliver personalized, AI-native learning experiences at scale. Given [Institution]\'s commitment to [specific initiative], I think there\'s a compelling alignment.\n\nWould you have 20 minutes next week to explore this?\n\nBest,\n[Your name]' },
@@ -1073,6 +1109,111 @@ function deleteComm() {
     closeModal('comm-modal');
     renderComms();
   }
+}
+
+// EMAIL IMPORT
+function openEmailImport() {
+  document.getElementById('ei-raw').value = '';
+  document.getElementById('ei-preview').style.display = 'none';
+  document.getElementById('ei-parse-btn').style.display = '';
+  document.getElementById('ei-save-btn').style.display = 'none';
+  const s = document.getElementById('ei-deal');
+  s.innerHTML = '<option value="">General</option>' + DATA.deals.map(d => `<option value="${d.id}">${d.org}</option>`).join('');
+  document.getElementById('email-import-modal').classList.add('show');
+}
+
+function parseEmailImport() {
+  const raw = document.getElementById('ei-raw').value;
+  if (!raw.trim()) return;
+
+  // Extract people from email patterns
+  const emailRegex = /(?:From|To|Cc|Hi|Dear|Thanks)\s*[:\s]?\s*([A-Z][a-z]+ [A-Z][a-z]+(?:\s[A-Z][a-z]+)*)/g;
+  const nameSet = new Set();
+  let match;
+  while ((match = emailRegex.exec(raw)) !== null) { nameSet.add(match[1].trim()); }
+  // Also grab names from sign-offs
+  const signOff = raw.match(/(?:^|\n)([A-Z][a-z]+ [A-Z][a-z]+)\s*\n.*(?:COO|CEO|VP|Director|Manager|Lead|President)/m);
+  if (signOff) nameSet.add(signOff[1]);
+  // Get emails
+  const emails = raw.match(/[\w.-]+@[\w.-]+\.\w+/g) || [];
+  emails.forEach(e => {
+    const parts = e.split('@')[0].split('.');
+    if (parts.length >= 2) {
+      const name = parts.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+      if (name.length > 4) nameSet.add(name);
+    }
+  });
+
+  // Extract subject
+  let subject = '';
+  const subMatch = raw.match(/Subject:\s*(.+)/i);
+  if (subMatch) subject = subMatch[1].replace(/^(Re:|Fwd:|FW:)\s*/gi, '').trim();
+
+  // Extract date
+  let date = '';
+  const dateMatch = raw.match(/(?:On|Date:)\s*(\w+ \d{1,2},?\s*\d{4})/i) || raw.match(/(\d{4}-\d{2}-\d{2})/);
+  if (dateMatch) {
+    const parsed = new Date(dateMatch[1]);
+    if (!isNaN(parsed)) date = parsed.toISOString().slice(0, 10);
+  }
+  if (!date) date = new Date().toISOString().slice(0, 10);
+
+  // Determine direction
+  const fromMatch = raw.match(/From:\s*.*?([\w.-]+@[\w.-]+)/i);
+  const isInbound = fromMatch && !fromMatch[1].includes('asu.edu') && !fromMatch[1].includes('fyi.');
+
+  // Build summary — take first substantive paragraph
+  const lines = raw.split('\n').filter(l => l.trim().length > 30 && !l.includes('@') && !l.includes('Subject:') && !l.includes('From:') && !l.includes('PLEASE NOTE'));
+  const summary = lines.slice(0, 3).join(' ').substring(0, 300);
+
+  // Extract follow-up hints
+  let followup = '';
+  const fuMatch = raw.match(/(?:let me know|happy to|schedule|next step|follow.?up|let's connect|call to discuss)[^.!?\n]*/i);
+  if (fuMatch) followup = fuMatch[0].trim();
+
+  // Populate preview
+  document.getElementById('ei-people').value = [...nameSet].filter(n => n.length > 2).join(', ');
+  document.getElementById('ei-subject').value = subject;
+  document.getElementById('ei-date').value = date;
+  document.getElementById('ei-direction').value = isInbound ? 'Inbound' : 'Outbound';
+  document.getElementById('ei-summary').value = summary;
+  document.getElementById('ei-followup').value = followup;
+  document.getElementById('ei-preview').style.display = 'block';
+  document.getElementById('ei-parse-btn').style.display = 'none';
+  document.getElementById('ei-save-btn').style.display = '';
+}
+
+function saveEmailImport() {
+  const cd = {
+    id: 'c' + Date.now(),
+    type: 'Email',
+    deal: document.getElementById('ei-deal').value,
+    people: document.getElementById('ei-people').value,
+    subject: document.getElementById('ei-subject').value,
+    direction: document.getElementById('ei-direction').value,
+    date: document.getElementById('ei-date').value,
+    fyiLink: '',
+    summary: document.getElementById('ei-summary').value,
+    followup: document.getElementById('ei-followup').value
+  };
+  if (!DATA.comms) DATA.comms = [];
+  DATA.comms.push(cd);
+  // Add to deal activity
+  if (cd.deal) {
+    const deal = DATA.deals.find(d => d.id === cd.deal);
+    if (deal) { deal.activity = deal.activity || []; deal.activity.unshift({ date: cd.date, text: 'Email: ' + (cd.subject || 'Imported email') }); }
+  }
+  // Auto-create follow-up task if specified
+  if (cd.followup) {
+    if (!DATA.tasks) DATA.tasks = [];
+    DATA.tasks.push({ id: 't' + Date.now(), title: cd.followup, deal: cd.deal, owner: cd.people.split(',')[0].trim(), due: '', priority: 'High', status: 'To Do', notes: 'From email import: ' + cd.subject });
+  }
+  saveData();
+  closeModal('email-import-modal');
+  populateCommsFilters();
+  renderComms();
+  renderTasks();
+  renderTimeline();
 }
 </script>
 </body>
