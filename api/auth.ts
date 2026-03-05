@@ -41,11 +41,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Password required' });
   }
 
-  const expectedHash = parseInt(process.env.AUTH_PASSWORD_HASH || '1666762267');
+  const rawEnv = process.env.AUTH_PASSWORD_HASH || '';
+  const expectedHash = rawEnv ? parseInt(rawEnv.trim()) : 1666762267;
   const inputHash = hashPassword(password);
 
   if (inputHash !== expectedHash) {
-    return res.status(401).json({ error: 'Invalid password' });
+    return res.status(401).json({ error: 'Invalid password', debug: { inputHash, expectedHash, envSet: !!process.env.AUTH_PASSWORD_HASH, envLen: rawEnv.length } });
   }
 
   const token = generateToken();
