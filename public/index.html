@@ -184,8 +184,14 @@ tr:hover { background: #f8fafc; }
 .followup-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
 .followup-item input[type="checkbox"] { width: 16px; height: 16px; }
 
+/* Attachments */
+.att-chip { display:inline-flex; align-items:center; gap:4px; font-size:10px; background:#eff6ff; color:var(--accent); padding:3px 8px; border-radius:4px; margin:2px; font-weight:600; text-decoration:none; }
+.att-chip:hover { background:var(--accent-light); }
+.att-chip .att-remove { cursor:pointer; color:var(--muted); font-size:12px; margin-left:2px; }
+.att-chip .att-remove:hover { color:var(--red); }
+
 @media (max-width: 1200px) { .kanban { grid-template-columns: repeat(3, 1fr); } }
-@media (max-width: 768px) { .kanban, .task-cols, .wr-grid, .forecast-summary { grid-template-columns: 1fr; } .charts-row { grid-template-columns: 1fr; } .kpi-row { grid-template-columns: repeat(2, 1fr); } .calc-grid { grid-template-columns: 1fr; } }
+@media (max-width: 768px) { .kanban, .task-cols, .wr-grid, .forecast-summary { grid-template-columns: 1fr; } .charts-row { grid-template-columns: 1fr !important; } .kpi-row { grid-template-columns: repeat(2, 1fr); } .calc-grid { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -241,9 +247,12 @@ tr:hover { background: #f8fafc; }
       <select id="filter-product" onchange="render()"><option value="">All Products</option><option value="EDU.FYI">EDU.FYI</option><option value="Agentic Self">Agentic Self</option><option value="Agentic Classroom">Agentic Classroom</option></select>
     </div>
     <div class="kanban" id="kanban-board"></div>
-    <div class="charts-row">
-      <div class="chart-card"><h3>By Type</h3><canvas id="chart-type"></canvas></div>
-      <div class="chart-card"><h3>By Stage</h3><canvas id="chart-stage"></canvas></div>
+    <!-- Progress to Goal -->
+    <div id="progress-goal" style="margin-top:16px"></div>
+    <div class="charts-row" style="grid-template-columns:1fr 1fr 1fr;margin-top:12px">
+      <div class="chart-card" style="padding:12px"><h3 style="font-size:12px;margin-bottom:6px">By Type</h3><canvas id="chart-type" height="140"></canvas></div>
+      <div class="chart-card" style="padding:12px"><h3 style="font-size:12px;margin-bottom:6px">By Stage</h3><canvas id="chart-stage" height="140"></canvas></div>
+      <div class="chart-card" style="padding:12px"><h3 style="font-size:12px;margin-bottom:6px">Revenue Forecast</h3><canvas id="chart-pipeline-rev" height="140"></canvas></div>
     </div>
   </div>
 
@@ -400,6 +409,17 @@ tr:hover { background: #f8fafc; }
   <label>Est. Learners</label><input type="number" id="f-learners" placeholder="500">
   <label>FYI.AI Project Link</label><input id="f-fyilink" placeholder="https://fyi.ai/u/...">
   <label>Notes</label><textarea id="f-notes"></textarea>
+  <label>Attachments</label>
+  <div id="f-attachments-list" style="margin-bottom:8px"></div>
+  <div style="display:flex;gap:6px;margin-bottom:4px">
+    <input id="f-att-name" placeholder="Document name" style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">
+    <input id="f-att-url" placeholder="URL (Google Drive, Dropbox, etc.)" style="flex:2;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">
+    <button type="button" onclick="addAttachment()" style="padding:7px 12px;background:var(--accent);color:white;border:none;border-radius:6px;font-size:12px;cursor:pointer;white-space:nowrap">+ Add</button>
+  </div>
+  <div style="margin-bottom:4px">
+    <select id="f-att-vault" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="">— Or link from Doc Vault —</option></select>
+    <button type="button" onclick="addVaultAttachment()" style="margin-top:4px;padding:5px 10px;background:#f1f5f9;color:var(--text);border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer">Link from Vault</button>
+  </div>
   <div class="modal-actions">
     <button class="btn-secondary" onclick="closeModal('deal-modal')">Cancel</button>
     <button class="btn-primary" onclick="saveDeal()">Save</button>
@@ -524,7 +544,7 @@ let AUTH_TOKEN = sessionStorage.getItem('edufyi_token') || localStorage.getItem(
 const API_BASE = ''; // Same origin — Vercel serves both
 
 // Data version — bump this whenever defaults are updated so stale localStorage is replaced
-const DATA_VERSION = 2;
+const DATA_VERSION = 3;
 
 const DEFAULT_DATA = {
   deals: [
@@ -727,7 +747,7 @@ function getFilteredDeals() {
 // RENDER
 function render() {
   renderKPIs(); renderKanban(); renderTable(); renderPeople(); renderAssets(); renderTasks(); renderTimeline();
-  populateOwnerFilter(); populateOwnerSelect(); renderCharts();
+  populateOwnerFilter(); populateOwnerSelect(); renderCharts(); renderProgressGoal();
   document.getElementById('last-updated').textContent = new Date().toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
 }
 
@@ -761,6 +781,7 @@ function renderKanban() {
         <div class="owner-badge"><span class="owner-avatar">${ini}</span>${d.owner||'Unassigned'}</div>
         ${d.nextStep?`<div style="margin-top:4px;font-size:10px;color:var(--muted)">Next: ${d.nextStep}</div>`:''}
         ${d.fyiLink?`<div style="margin-top:4px"><a href="${d.fyiLink}" target="_blank" onclick="event.stopPropagation()" style="font-size:10px;color:var(--purple);font-weight:600;text-decoration:none">FYI.AI Project &rarr;</a></div>`:''}
+        ${(d.attachments&&d.attachments.length)?`<div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:2px">${d.attachments.map(a=>`<a href="${a.url}" target="_blank" onclick="event.stopPropagation()" class="att-chip" title="${a.url}">&#128206; ${a.name}</a>`).join('')}</div>`:''}
       </div>`;
     });
     html += '</div>';
@@ -784,10 +805,12 @@ function onDrop(e) {
 // TABLE
 function renderTable() {
   const deals = getFilteredDeals();
-  let html = '<thead><tr><th>Organization</th><th>Products</th><th>Stage</th><th>Priority</th><th>Owner</th><th>Learners</th><th>Next Step</th><th>FYI.AI</th></tr></thead><tbody>';
+  let html = '<thead><tr><th>Organization</th><th>Products</th><th>Stage</th><th>Priority</th><th>Owner</th><th>Learners</th><th>Next Step</th><th>Docs</th><th>FYI.AI</th></tr></thead><tbody>';
   deals.forEach(d => {
     const prods = d.products ? d.products.map(p => `<span class="product-tag">${p}</span>`).join(' ') : '';
-    html += `<tr onclick="openEditDeal('${d.id}')" style="cursor:pointer"><td><strong>${d.org}</strong><br><span style="color:var(--muted);font-size:11px">${d.type}</span></td><td>${prods}</td><td><span class="stage-badge" style="background:${STAGE_COLORS[d.stage]}20;color:${STAGE_COLORS[d.stage]}">${STAGE_LABELS[d.stage]}</span></td><td><span class="priority ${d.priority.toLowerCase()}">${d.priority}</span></td><td>${d.owner||'—'}</td><td>${d.learners||'—'}</td><td>${d.nextStep||'—'}</td><td>${d.fyiLink?`<a href="${d.fyiLink}" target="_blank" onclick="event.stopPropagation()" style="color:var(--purple);font-size:11px;font-weight:600">Open</a>`:'—'}</td></tr>`;
+    const attCount = (d.attachments||[]).length;
+    const attHtml = attCount ? `<span style="font-size:11px;color:var(--accent);font-weight:600">${attCount} doc${attCount>1?'s':''}</span>` : '—';
+    html += `<tr onclick="openEditDeal('${d.id}')" style="cursor:pointer"><td><strong>${d.org}</strong><br><span style="color:var(--muted);font-size:11px">${d.type}</span></td><td>${prods}</td><td><span class="stage-badge" style="background:${STAGE_COLORS[d.stage]}20;color:${STAGE_COLORS[d.stage]}">${STAGE_LABELS[d.stage]}</span></td><td><span class="priority ${d.priority.toLowerCase()}">${d.priority}</span></td><td>${d.owner||'—'}</td><td>${d.learners||'—'}</td><td>${d.nextStep||'—'}</td><td>${attHtml}</td><td>${d.fyiLink?`<a href="${d.fyiLink}" target="_blank" onclick="event.stopPropagation()" style="color:var(--purple);font-size:11px;font-weight:600">Open</a>`:'—'}</td></tr>`;
   });
   document.getElementById('deal-table').innerHTML = html + '</tbody>';
 }
@@ -862,16 +885,84 @@ function renderAssets() {
 }
 
 // CHARTS
-let chartType, chartStage;
+let chartType, chartStage, chartPipelineRev;
 function renderCharts() {
   const deals = DATA.deals, types = {}, stageData = {};
   deals.forEach(d => { types[d.type] = (types[d.type]||0)+1; });
   STAGES.forEach(s => { stageData[STAGE_LABELS[s]] = deals.filter(d=>d.stage===s).length; });
-  if (chartType) chartType.destroy(); if (chartStage) chartStage.destroy();
+  if (chartType) chartType.destroy(); if (chartStage) chartStage.destroy(); if (chartPipelineRev) chartPipelineRev.destroy();
   const c1 = document.getElementById('chart-type');
-  if (c1) chartType = new Chart(c1, {type:'doughnut',data:{labels:Object.keys(types),datasets:[{data:Object.values(types),backgroundColor:['#3b82f6','#8b5cf6','#f59e0b','#16a34a']}]},options:{plugins:{legend:{position:'bottom'}}}});
+  if (c1) chartType = new Chart(c1, {type:'doughnut',data:{labels:Object.keys(types),datasets:[{data:Object.values(types),backgroundColor:['#3b82f6','#8b5cf6','#f59e0b','#16a34a']}]},options:{plugins:{legend:{position:'bottom',labels:{font:{size:10}}}},maintainAspectRatio:false}});
   const c2 = document.getElementById('chart-stage');
-  if (c2) chartStage = new Chart(c2, {type:'bar',data:{labels:Object.keys(stageData),datasets:[{data:Object.values(stageData),backgroundColor:Object.values(STAGE_COLORS)}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}});
+  if (c2) chartStage = new Chart(c2, {type:'bar',data:{labels:Object.keys(stageData),datasets:[{data:Object.values(stageData),backgroundColor:Object.values(STAGE_COLORS)}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}},x:{ticks:{font:{size:9}}}},maintainAspectRatio:false}});
+  // Mini revenue by partner chart
+  const c3 = document.getElementById('chart-pipeline-rev');
+  if (c3) {
+    const revData = deals.map(d => {
+      let rpl = 0;
+      (d.products||[]).forEach(p => { if(PRODUCT_PRESETS[p]) rpl += PRODUCT_PRESETS[p].revPerLearner; });
+      if(!rpl) rpl = 150;
+      return { org: d.org, rev: (d.learners||0) * rpl * (STAGE_PROB[d.stage]||0) };
+    }).filter(r => r.rev > 0).sort((a,b) => b.rev - a.rev);
+    chartPipelineRev = new Chart(c3, {type:'bar',data:{labels:revData.map(r=>r.org),datasets:[{data:revData.map(r=>r.rev),backgroundColor:'#3b82f6'}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{callback:v=>'$'+(v/1000).toFixed(0)+'k',font:{size:9}}},y:{ticks:{font:{size:9}}}},maintainAspectRatio:false}});
+  }
+}
+
+// PROGRESS TO GOAL — Overall Economics & Success summary on main Pipeline page
+function renderProgressGoal() {
+  const deals = DATA.deals;
+  // Overall portfolio metrics
+  let totalLearners = 0, totalWeightedRev = 0, totalActive = 0, totalProposalPlus = 0;
+  deals.forEach(d => {
+    const l = d.learners || 0;
+    let rpl = 0;
+    (d.products||[]).forEach(p => { if(PRODUCT_PRESETS[p]) rpl += PRODUCT_PRESETS[p].revPerLearner; });
+    if(!rpl) rpl = 150;
+    totalLearners += l;
+    totalWeightedRev += l * rpl * (STAGE_PROB[d.stage]||0);
+    if(d.stage === 'Active') totalActive++;
+    if(['Proposal','Agreement','Active'].includes(d.stage)) totalProposalPlus++;
+  });
+
+  // Active partnership revenue (100% probability)
+  let activeRev = 0, activeLearners = 0;
+  deals.filter(d => d.stage === 'Active').forEach(d => {
+    const l = d.learners||0; activeLearners += l;
+    let rpl = 0;
+    (d.products||[]).forEach(p => { if(PRODUCT_PRESETS[p]) rpl += PRODUCT_PRESETS[p].revPerLearner; });
+    if(!rpl) rpl = 150;
+    activeRev += l * rpl;
+  });
+
+  // Pipeline velocity — deals in proposal+ stage
+  const pipelineValue = totalWeightedRev;
+  const avgDealSize = deals.length > 0 ? Math.round(totalWeightedRev / deals.length) : 0;
+
+  const el = document.getElementById('progress-goal');
+  if (!el) return;
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">
+      <div style="background:linear-gradient(135deg,#1e293b,#334155);color:white;border-radius:12px;padding:16px">
+        <div style="font-size:10px;text-transform:uppercase;opacity:0.7;letter-spacing:0.5px">Weighted Pipeline</div>
+        <div style="font-size:28px;font-weight:700;margin-top:2px">${fmt(pipelineValue)}</div>
+        <div style="font-size:11px;opacity:0.7">${deals.length} deals &bull; ${totalLearners.toLocaleString()} total learners</div>
+      </div>
+      <div style="background:linear-gradient(135deg,#166534,#15803d);color:white;border-radius:12px;padding:16px">
+        <div style="font-size:10px;text-transform:uppercase;opacity:0.7;letter-spacing:0.5px">Active Revenue</div>
+        <div style="font-size:28px;font-weight:700;margin-top:2px">${fmt(activeRev)}</div>
+        <div style="font-size:11px;opacity:0.7">${totalActive} active &bull; ${activeLearners.toLocaleString()} learners</div>
+      </div>
+      <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:16px">
+        <div style="font-size:10px;text-transform:uppercase;color:var(--muted);letter-spacing:0.5px">Late-Stage Pipeline</div>
+        <div style="font-size:28px;font-weight:700;color:var(--accent);margin-top:2px">${totalProposalPlus} deals</div>
+        <div style="font-size:11px;color:var(--muted)">Proposal, Agreement, or Active</div>
+      </div>
+      <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:16px">
+        <div style="font-size:10px;text-transform:uppercase;color:var(--muted);letter-spacing:0.5px">Avg Deal Value (Weighted)</div>
+        <div style="font-size:28px;font-weight:700;color:var(--text);margin-top:2px">${fmt(avgDealSize)}</div>
+        <div style="font-size:11px;color:var(--muted)">Per opportunity</div>
+      </div>
+    </div>`;
 }
 
 // OWNER SELECTS
@@ -884,10 +975,54 @@ function closeModal(id) { document.getElementById(id).classList.remove('show'); 
 document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e => { if (e.target === o) o.classList.remove('show'); }));
 document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('show')); });
 
+// DEAL MODAL — ATTACHMENTS
+let _dealAttachments = []; // temp array while modal is open
+
+function renderDealAttachments() {
+  const el = document.getElementById('f-attachments-list');
+  if (!_dealAttachments.length) { el.innerHTML = '<span style="font-size:11px;color:var(--muted)">No documents attached yet.</span>'; return; }
+  el.innerHTML = _dealAttachments.map((a, i) =>
+    `<a href="${a.url}" target="_blank" class="att-chip" onclick="event.preventDefault();event.stopPropagation()">&#128206; ${a.name} <span class="att-remove" onclick="event.preventDefault();event.stopPropagation();removeAttachment(${i})">&times;</span></a>`
+  ).join('');
+}
+
+function addAttachment() {
+  const name = document.getElementById('f-att-name').value.trim();
+  const url = document.getElementById('f-att-url').value.trim();
+  if (!name || !url) return;
+  _dealAttachments.push({ name, url });
+  document.getElementById('f-att-name').value = '';
+  document.getElementById('f-att-url').value = '';
+  renderDealAttachments();
+}
+
+function addVaultAttachment() {
+  const sel = document.getElementById('f-att-vault');
+  const assetId = sel.value;
+  if (!assetId) return;
+  const asset = (DATA.assets||[]).find(a => a.id === assetId);
+  if (!asset) return;
+  // Avoid duplicates
+  if (_dealAttachments.some(a => a.vaultId === assetId)) return;
+  _dealAttachments.push({ name: asset.name + ' (' + asset.type + ')', url: asset.link || '#vault:' + assetId, vaultId: assetId });
+  sel.value = '';
+  renderDealAttachments();
+}
+
+function removeAttachment(idx) {
+  _dealAttachments.splice(idx, 1);
+  renderDealAttachments();
+}
+
+function populateVaultSelect() {
+  const s = document.getElementById('f-att-vault');
+  s.innerHTML = '<option value="">— Or link from Doc Vault —</option>' + (DATA.assets||[]).map(a => `<option value="${a.id}">${a.name} (${a.type})</option>`).join('');
+}
+
 // DEAL MODAL
-function openAddDeal() { ['f-id','f-org','f-desc','f-contact','f-next','f-date','f-notes','f-learners','f-fyilink'].forEach(id=>document.getElementById(id).value=''); document.getElementById('f-type').value='Education'; document.getElementById('f-stage').value='Awareness'; document.getElementById('f-priority').value='High'; document.getElementById('f-owner').value=''; Array.from(document.getElementById('f-products').options).forEach(o=>o.selected=false); document.getElementById('btn-delete').style.display='none'; document.getElementById('modal-title').textContent='Add Opportunity'; populateOwnerSelect(); document.getElementById('deal-modal').classList.add('show'); }
-function openEditDeal(id) { const d=DATA.deals.find(x=>x.id===id); if(!d) return; document.getElementById('modal-title').textContent='Edit: '+d.org; document.getElementById('f-id').value=d.id; document.getElementById('f-org').value=d.org; document.getElementById('f-type').value=d.type; document.getElementById('f-desc').value=d.desc||''; document.getElementById('f-stage').value=d.stage; document.getElementById('f-priority').value=d.priority; document.getElementById('f-contact').value=d.contact||''; document.getElementById('f-next').value=d.nextStep||''; document.getElementById('f-date').value=d.nextDate||''; document.getElementById('f-notes').value=d.notes||''; document.getElementById('f-learners').value=d.learners||''; document.getElementById('f-fyilink').value=d.fyiLink||''; populateOwnerSelect(); document.getElementById('f-owner').value=d.owner||''; Array.from(document.getElementById('f-products').options).forEach(o=>{o.selected=d.products&&d.products.includes(o.value);}); document.getElementById('btn-delete').style.display='block'; document.getElementById('deal-modal').classList.add('show'); }
-function saveDeal() { const id=document.getElementById('f-id').value; const products=Array.from(document.getElementById('f-products').selectedOptions).map(o=>o.value); const dd={org:document.getElementById('f-org').value,type:document.getElementById('f-type').value,desc:document.getElementById('f-desc').value,stage:document.getElementById('f-stage').value,priority:document.getElementById('f-priority').value,owner:document.getElementById('f-owner').value,contact:document.getElementById('f-contact').value,nextStep:document.getElementById('f-next').value,nextDate:document.getElementById('f-date').value,notes:document.getElementById('f-notes').value,learners:parseInt(document.getElementById('f-learners').value)||0,fyiLink:document.getElementById('f-fyilink').value,products}; if(id){const deal=DATA.deals.find(d=>d.id===id);Object.assign(deal,dd);deal.activity=deal.activity||[];deal.activity.unshift({date:new Date().toISOString().slice(0,10),text:'Updated deal details'});}else{dd.id='d'+Date.now();dd.activity=[{date:new Date().toISOString().slice(0,10),text:'Created opportunity'}];DATA.deals.push(dd);} saveData(); closeModal('deal-modal'); render(); }
+function openAddDeal() { ['f-id','f-org','f-desc','f-contact','f-next','f-date','f-notes','f-learners','f-fyilink'].forEach(id=>document.getElementById(id).value=''); document.getElementById('f-type').value='Education'; document.getElementById('f-stage').value='Awareness'; document.getElementById('f-priority').value='High'; document.getElementById('f-owner').value=''; Array.from(document.getElementById('f-products').options).forEach(o=>o.selected=false); document.getElementById('btn-delete').style.display='none'; document.getElementById('modal-title').textContent='Add Opportunity'; _dealAttachments=[]; renderDealAttachments(); populateOwnerSelect(); populateVaultSelect(); document.getElementById('deal-modal').classList.add('show'); }
+function openEditDeal(id) { const d=DATA.deals.find(x=>x.id===id); if(!d) return; document.getElementById('modal-title').textContent='Edit: '+d.org; document.getElementById('f-id').value=d.id; document.getElementById('f-org').value=d.org; document.getElementById('f-type').value=d.type; document.getElementById('f-desc').value=d.desc||''; document.getElementById('f-stage').value=d.stage; document.getElementById('f-priority').value=d.priority; document.getElementById('f-contact').value=d.contact||''; document.getElementById('f-next').value=d.nextStep||''; document.getElementById('f-date').value=d.nextDate||''; document.getElementById('f-notes').value=d.notes||''; document.getElementById('f-learners').value=d.learners||''; document.getElementById('f-fyilink').value=d.fyiLink||''; populateOwnerSelect(); document.getElementById('f-owner').value=d.owner||''; Array.from(document.getElementById('f-products').options).forEach(o=>{o.selected=d.products&&d.products.includes(o.value);}); _dealAttachments=JSON.parse(JSON.stringify(d.attachments||[])); renderDealAttachments(); populateVaultSelect(); document.getElementById('btn-delete').style.display='block'; document.getElementById('deal-modal').classList.add('show'); }
+function saveDeal() { const id=document.getElementById('f-id').value; const products=Array.from(document.getElementById('f-products').selectedOptions).map(o=>o.value); const dd={org:document.getElementById('f-org').value,type:document.getElementById('f-type').value,desc:document.getElementById('f-desc').value,stage:document.getElementById('f-stage').value,priority:document.getElementById('f-priority').value,owner:document.getElementById('f-owner').value,contact:document.getElementById('f-contact').value,nextStep:document.getElementById('f-next').value,nextDate:document.getElementById('f-date').value,notes:document.getElementById('f-notes').value,learners:parseInt(document.getElementById('f-learners').value)||0,fyiLink:document.getElementById('f-fyilink').value,products,attachments:_dealAttachments}; if(id){const deal=DATA.deals.find(d=>d.id===id);Object.assign(deal,dd);deal.activity=deal.activity||[];deal.activity.unshift({date:new Date().toISOString().slice(0,10),text:'Updated deal details'});}else{dd.id='d'+Date.now();dd.activity=[{date:new Date().toISOString().slice(0,10),text:'Created opportunity'}];DATA.deals.push(dd);} saveData(); closeModal('deal-modal'); render(); }
 function deleteDeal() { const id=document.getElementById('f-id').value; if(id&&confirm('Remove this opportunity?')){DATA.deals=DATA.deals.filter(d=>d.id!==id);saveData();closeModal('deal-modal');render();} }
 
 // PERSON MODAL

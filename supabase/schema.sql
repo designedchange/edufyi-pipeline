@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS deals (
   learners INTEGER DEFAULT 0,
   fyi_link TEXT DEFAULT '',
   activity JSONB DEFAULT '[]'::jsonb,
+  attachments JSONB DEFAULT '[]'::jsonb,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
