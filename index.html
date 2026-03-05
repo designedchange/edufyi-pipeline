@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EDU.FYI Partnership Pipeline</title>
+<title>EDU.FYI Customer Pipeline</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
 :root {
@@ -122,6 +122,33 @@ tr:hover { background: #f8fafc; }
 .chart-card { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
 .chart-card h3 { font-size: 14px; margin-bottom: 12px; }
 
+/* Deal Economics Calculator */
+.calc-container { max-width: 900px; }
+.calc-section { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+.calc-section h3 { font-size: 16px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.calc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.calc-field { }
+.calc-field label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; }
+.calc-field input, .calc-field select { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; }
+.calc-field .helper { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+.result-card { background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 16px; text-align: center; }
+.result-card .result-label { font-size: 11px; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.result-card .result-value { font-size: 26px; font-weight: 700; margin-top: 4px; }
+.result-card .result-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.result-card.positive .result-value { color: var(--green); }
+.result-card.negative .result-value { color: var(--red); }
+.result-card.neutral .result-value { color: var(--accent); }
+.calc-summary { background: linear-gradient(135deg, #1e293b, #334155); color: white; border-radius: 12px; padding: 24px; margin-top: 20px; }
+.calc-summary h3 { color: white; border-bottom-color: rgba(255,255,255,0.2); }
+.calc-summary .verdict { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+.calc-summary .verdict-detail { font-size: 14px; opacity: 0.85; line-height: 1.6; }
+.saved-scenarios { margin-top: 20px; }
+.scenario-card { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+.scenario-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.scenario-card .scenario-name { font-weight: 600; font-size: 14px; }
+.scenario-card .scenario-meta { font-size: 12px; color: var(--muted); }
+
 @media (max-width: 1200px) {
   .kanban { grid-template-columns: repeat(3, 1fr); }
 }
@@ -149,7 +176,7 @@ tr:hover { background: #f8fafc; }
 <div id="main-app">
   <header>
     <div>
-      <h1>EDU.FYI Partnership Pipeline</h1>
+      <h1>EDU.FYI Customer Pipeline</h1>
       <div class="subtitle">Drag cards to move across stages &bull; Click to edit &bull; Last updated: <span id="last-updated"></span></div>
     </div>
     <button class="add-btn" onclick="openAddDeal()">+ Add Opportunity</button>
@@ -165,6 +192,7 @@ tr:hover { background: #f8fafc; }
     <div class="tab" onclick="switchTab('people')">People</div>
     <div class="tab" onclick="switchTab('events')">Events</div>
     <div class="tab" onclick="switchTab('assets')">Assets</div>
+    <div class="tab" onclick="switchTab('economics')">Deal Structure</div>
   </div>
 
   <!-- Pipeline Tab -->
@@ -219,6 +247,116 @@ tr:hover { background: #f8fafc; }
   <!-- Assets Tab -->
   <div class="tab-content" id="tab-assets">
     <div class="people-grid" id="assets-grid"></div>
+  </div>
+
+  <!-- Deal Structure / Economics Tab -->
+  <div class="tab-content" id="tab-economics">
+    <div class="calc-container">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div>
+          <h2 style="font-size:18px;margin-bottom:4px">Deal Economics Calculator</h2>
+          <p style="font-size:13px;color:var(--muted)">Evaluate net profit per learner vs. costs for any deal</p>
+        </div>
+        <div style="display:flex;gap:8px">
+          <select id="calc-deal" onchange="loadDealIntoCalc()" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px">
+            <option value="">New Analysis</option>
+          </select>
+          <button class="add-btn" style="margin:0" onclick="saveScenario()">Save Scenario</button>
+        </div>
+      </div>
+
+      <!-- Revenue Inputs -->
+      <div class="calc-section">
+        <h3>Revenue Assumptions</h3>
+        <div class="calc-grid">
+          <div class="calc-field">
+            <label>Deal Partner</label>
+            <input id="calc-partner" placeholder="e.g. Arden University" oninput="recalc()">
+          </div>
+          <div class="calc-field">
+            <label>Product</label>
+            <select id="calc-product" onchange="recalc()">
+              <option value="EDU.FYI">EDU.FYI</option>
+              <option value="Agentic Self">Agentic Self</option>
+              <option value="Agentic Classroom">Agentic Classroom</option>
+              <option value="Bundle">Full Bundle</option>
+            </select>
+          </div>
+          <div class="calc-field">
+            <label>Estimated Learners</label>
+            <input type="number" id="calc-learners" value="500" oninput="recalc()">
+            <div class="helper">Total learners in Year 1</div>
+          </div>
+          <div class="calc-field">
+            <label>Revenue per Learner ($)</label>
+            <input type="number" id="calc-rev-learner" value="150" oninput="recalc()">
+            <div class="helper">Annual subscription / license fee per learner</div>
+          </div>
+          <div class="calc-field">
+            <label>Implementation Fee ($)</label>
+            <input type="number" id="calc-impl-fee" value="25000" oninput="recalc()">
+            <div class="helper">One-time setup / onboarding fee</div>
+          </div>
+          <div class="calc-field">
+            <label>Revenue Share to Partner (%)</label>
+            <input type="number" id="calc-rev-share" value="15" min="0" max="100" oninput="recalc()">
+            <div class="helper">Percentage of learner revenue shared with partner</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cost Inputs -->
+      <div class="calc-section">
+        <h3>Cost Structure</h3>
+        <div class="calc-grid">
+          <div class="calc-field">
+            <label>Platform Cost per Learner ($)</label>
+            <input type="number" id="calc-platform-cost" value="30" oninput="recalc()">
+            <div class="helper">Hosting, AI compute, infrastructure per learner</div>
+          </div>
+          <div class="calc-field">
+            <label>Content / Curriculum Cost per Learner ($)</label>
+            <input type="number" id="calc-content-cost" value="15" oninput="recalc()">
+            <div class="helper">Content creation, curation, licensing</div>
+          </div>
+          <div class="calc-field">
+            <label>Support Cost per Learner ($)</label>
+            <input type="number" id="calc-support-cost" value="10" oninput="recalc()">
+            <div class="helper">Customer success, support staffing</div>
+          </div>
+          <div class="calc-field">
+            <label>Sales & Marketing Cost ($)</label>
+            <input type="number" id="calc-sales-cost" value="15000" oninput="recalc()">
+            <div class="helper">Total BD / marketing cost for this deal</div>
+          </div>
+          <div class="calc-field">
+            <label>Integration / Custom Dev ($)</label>
+            <input type="number" id="calc-dev-cost" value="10000" oninput="recalc()">
+            <div class="helper">Partner-specific integrations, custom features</div>
+          </div>
+          <div class="calc-field">
+            <label>Annual Overhead Allocation ($)</label>
+            <input type="number" id="calc-overhead" value="5000" oninput="recalc()">
+            <div class="helper">Proportional share of team / office / ops costs</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div class="calc-section">
+        <h3>Deal Economics</h3>
+        <div class="results-grid" id="calc-results"></div>
+      </div>
+
+      <!-- Verdict -->
+      <div class="calc-summary" id="calc-verdict"></div>
+
+      <!-- Saved Scenarios -->
+      <div class="saved-scenarios">
+        <h3 style="font-size:16px;margin-bottom:12px">Saved Scenarios</h3>
+        <div id="scenarios-list"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -364,12 +502,13 @@ if (sessionStorage.getItem('edufyi_auth') === '1') {
 // ===================== TABS =====================
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach((t, i) => {
-    const tabs = ['pipeline','table','people','events','assets'];
+    const tabs = ['pipeline','table','people','events','assets','economics'];
     t.classList.toggle('active', tabs[i] === tab);
   });
   document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
   if (tab === 'pipeline') renderCharts();
+  if (tab === 'economics') { populateCalcDealSelect(); recalc(); renderScenarios(); }
 }
 
 // ===================== FILTERS =====================
@@ -758,6 +897,173 @@ document.addEventListener('keydown', e => {
     document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('show'));
   }
 });
+
+// ===================== DEAL ECONOMICS CALCULATOR =====================
+function populateCalcDealSelect() {
+  const sel = document.getElementById('calc-deal');
+  sel.innerHTML = '<option value="">New Analysis</option>' + DATA.deals.map(d => `<option value="${d.id}">${d.org}</option>`).join('');
+}
+
+function loadDealIntoCalc() {
+  const id = document.getElementById('calc-deal').value;
+  if (!id) return;
+  const deal = DATA.deals.find(d => d.id === id);
+  if (deal) {
+    document.getElementById('calc-partner').value = deal.org;
+    const product = deal.products && deal.products.length > 2 ? 'Bundle' : (deal.products ? deal.products[0] : 'EDU.FYI');
+    document.getElementById('calc-product').value = product;
+    recalc();
+  }
+}
+
+function n(id) { return parseFloat(document.getElementById(id).value) || 0; }
+function fmt(v) { return v >= 0 ? '$' + v.toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0}) : '-$' + Math.abs(v).toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0}); }
+
+function recalc() {
+  const learners = n('calc-learners');
+  const revPerLearner = n('calc-rev-learner');
+  const implFee = n('calc-impl-fee');
+  const revSharePct = n('calc-rev-share') / 100;
+  const platformCost = n('calc-platform-cost');
+  const contentCost = n('calc-content-cost');
+  const supportCost = n('calc-support-cost');
+  const salesCost = n('calc-sales-cost');
+  const devCost = n('calc-dev-cost');
+  const overhead = n('calc-overhead');
+
+  // Revenue
+  const grossLearnerRev = learners * revPerLearner;
+  const revShareAmt = grossLearnerRev * revSharePct;
+  const netLearnerRev = grossLearnerRev - revShareAmt;
+  const totalRevenue = netLearnerRev + implFee;
+
+  // Costs
+  const totalPerLearnerCost = (platformCost + contentCost + supportCost) * learners;
+  const totalFixedCost = salesCost + devCost + overhead;
+  const totalCost = totalPerLearnerCost + totalFixedCost;
+
+  // Margins
+  const netProfit = totalRevenue - totalCost;
+  const margin = totalRevenue > 0 ? (netProfit / totalRevenue * 100) : 0;
+  const netProfitPerLearner = learners > 0 ? netProfit / learners : 0;
+  const costPerLearner = learners > 0 ? totalCost / learners : 0;
+  const revenuePerLearner = learners > 0 ? totalRevenue / learners : 0;
+  const breakEvenLearners = (revPerLearner * (1 - revSharePct) - platformCost - contentCost - supportCost) > 0
+    ? Math.ceil((totalFixedCost - implFee) / (revPerLearner * (1 - revSharePct) - platformCost - contentCost - supportCost))
+    : '—';
+
+  const profitClass = netProfit >= 0 ? 'positive' : 'negative';
+
+  document.getElementById('calc-results').innerHTML = `
+    <div class="result-card neutral"><div class="result-label">Total Revenue</div><div class="result-value">${fmt(totalRevenue)}</div><div class="result-sub">${fmt(revenuePerLearner)}/learner</div></div>
+    <div class="result-card"><div class="result-label">Total Cost</div><div class="result-value">${fmt(totalCost)}</div><div class="result-sub">${fmt(costPerLearner)}/learner</div></div>
+    <div class="result-card ${profitClass}"><div class="result-label">Net Profit</div><div class="result-value">${fmt(netProfit)}</div><div class="result-sub">${fmt(netProfitPerLearner)}/learner</div></div>
+    <div class="result-card ${margin >= 20 ? 'positive' : margin >= 0 ? 'neutral' : 'negative'}"><div class="result-label">Margin</div><div class="result-value">${margin.toFixed(1)}%</div><div class="result-sub">${breakEvenLearners !== '—' ? 'Break-even: ' + breakEvenLearners + ' learners' : 'Negative unit economics'}</div></div>
+    <div class="result-card"><div class="result-label">Rev Share to Partner</div><div class="result-value">${fmt(revShareAmt)}</div><div class="result-sub">${(revSharePct*100).toFixed(0)}% of ${fmt(grossLearnerRev)}</div></div>
+    <div class="result-card"><div class="result-label">Implementation Fee</div><div class="result-value">${fmt(implFee)}</div><div class="result-sub">One-time revenue</div></div>
+  `;
+
+  // Verdict
+  let verdict, detail;
+  if (margin >= 40) { verdict = 'Strong Deal'; detail = `At ${margin.toFixed(0)}% margin with ${fmt(netProfitPerLearner)} net profit per learner, this deal structure is highly favorable. The economics scale well with learner growth.`; }
+  else if (margin >= 20) { verdict = 'Solid Deal'; detail = `${margin.toFixed(0)}% margin is healthy. Net profit of ${fmt(netProfit)} on ${learners} learners works. Consider negotiating rev share down or increasing per-learner pricing for upside.`; }
+  else if (margin >= 5) { verdict = 'Marginal — Proceed with Caution'; detail = `${margin.toFixed(0)}% margin is thin. At ${fmt(netProfitPerLearner)}/learner, you need volume to make this work. Review cost structure or push for higher per-learner revenue.`; }
+  else if (margin >= 0) { verdict = 'Near Break-Even'; detail = `Only ${margin.toFixed(1)}% margin leaves no room for error. This deal may have strategic value but needs restructuring for economic sustainability.`; }
+  else { verdict = 'Unprofitable — Restructure'; detail = `Losing ${fmt(Math.abs(netProfit))} on this deal. Either reduce costs (currently ${fmt(costPerLearner)}/learner), increase pricing, lower rev share, or grow the learner base past ${breakEvenLearners !== '—' ? breakEvenLearners : 'current projections'} to reach profitability.`; }
+
+  document.getElementById('calc-verdict').innerHTML = `
+    <h3 style="border-bottom:1px solid rgba(255,255,255,0.2);padding-bottom:8px;margin-bottom:12px">Deal Verdict</h3>
+    <div class="verdict">${verdict}</div>
+    <div class="verdict-detail">${detail}</div>
+  `;
+}
+
+// Saved scenarios
+function getScenarios() { return JSON.parse(localStorage.getItem('edufyi_scenarios') || '[]'); }
+function saveScenarios(s) { localStorage.setItem('edufyi_scenarios', JSON.stringify(s)); }
+
+function saveScenario() {
+  const partner = document.getElementById('calc-partner').value || 'Untitled';
+  const product = document.getElementById('calc-product').value;
+  const scenario = {
+    id: 's' + Date.now(),
+    name: partner + ' — ' + product,
+    date: new Date().toISOString().slice(0,10),
+    partner, product,
+    learners: n('calc-learners'),
+    revPerLearner: n('calc-rev-learner'),
+    implFee: n('calc-impl-fee'),
+    revShare: n('calc-rev-share'),
+    platformCost: n('calc-platform-cost'),
+    contentCost: n('calc-content-cost'),
+    supportCost: n('calc-support-cost'),
+    salesCost: n('calc-sales-cost'),
+    devCost: n('calc-dev-cost'),
+    overhead: n('calc-overhead')
+  };
+  const scenarios = getScenarios();
+  scenarios.unshift(scenario);
+  saveScenarios(scenarios);
+  renderScenarios();
+}
+
+function loadScenario(id) {
+  const scenarios = getScenarios();
+  const s = scenarios.find(x => x.id === id);
+  if (!s) return;
+  document.getElementById('calc-partner').value = s.partner || '';
+  document.getElementById('calc-product').value = s.product || 'EDU.FYI';
+  document.getElementById('calc-learners').value = s.learners || 0;
+  document.getElementById('calc-rev-learner').value = s.revPerLearner || 0;
+  document.getElementById('calc-impl-fee').value = s.implFee || 0;
+  document.getElementById('calc-rev-share').value = s.revShare || 0;
+  document.getElementById('calc-platform-cost').value = s.platformCost || 0;
+  document.getElementById('calc-content-cost').value = s.contentCost || 0;
+  document.getElementById('calc-support-cost').value = s.supportCost || 0;
+  document.getElementById('calc-sales-cost').value = s.salesCost || 0;
+  document.getElementById('calc-dev-cost').value = s.devCost || 0;
+  document.getElementById('calc-overhead').value = s.overhead || 0;
+  recalc();
+}
+
+function deleteScenario(id, e) {
+  e.stopPropagation();
+  if (confirm('Delete this scenario?')) {
+    const scenarios = getScenarios().filter(s => s.id !== id);
+    saveScenarios(scenarios);
+    renderScenarios();
+  }
+}
+
+function renderScenarios() {
+  const scenarios = getScenarios();
+  if (scenarios.length === 0) {
+    document.getElementById('scenarios-list').innerHTML = '<p style="color:var(--muted);font-size:13px">No saved scenarios yet. Run an analysis and click "Save Scenario" to store it.</p>';
+    return;
+  }
+  let html = '';
+  scenarios.forEach(s => {
+    const grossRev = s.learners * s.revPerLearner;
+    const netRev = grossRev * (1 - s.revShare/100) + (s.implFee || 0);
+    const totalCost = (s.platformCost + s.contentCost + s.supportCost) * s.learners + s.salesCost + s.devCost + s.overhead;
+    const profit = netRev - totalCost;
+    const margin = netRev > 0 ? (profit / netRev * 100) : 0;
+    html += `<div class="scenario-card" onclick="loadScenario('${s.id}')">
+      <div>
+        <div class="scenario-name">${s.name}</div>
+        <div class="scenario-meta">${s.learners} learners &bull; ${s.date}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px">
+        <div style="text-align:right">
+          <div style="font-weight:700;color:${profit >= 0 ? 'var(--green)' : 'var(--red)'}">${fmt(profit)}</div>
+          <div style="font-size:11px;color:var(--muted)">${margin.toFixed(0)}% margin</div>
+        </div>
+        <button onclick="deleteScenario('${s.id}', event)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px">&times;</button>
+      </div>
+    </div>`;
+  });
+  document.getElementById('scenarios-list').innerHTML = html;
+}
 </script>
 </body>
 </html>
