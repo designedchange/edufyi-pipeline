@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDU.FYI — Partnership Pipeline</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
+    <style>
+        :root {
+            --bg: #f5f5f0;
+            --card: #ffffff;
+            --header-bg: #1a1a1a;
+            --text: #1a1a1a;
+            --text-sec: #6b6b6b;
+            --text-light: #ffffff;
+            --accent: #2563eb;
+            --accent-light: #dbeafe;
+            --border: #e5e5e0;
+            --gap: 16px;
+            --radius: 6px;
+            --stage-awareness: #94a3b8;
+            --stage-conversation: #60a5fa;
+            --stage-alignment: #a78bfa;
+            --stage-proposal: #f59e0b;
+            --stage-agreement: #34d399;
+            --stage-active: #10b981;
+            --tag-edu: #dbeafe;
+            --tag-edu-text: #1e40af;
+            --tag-tech: #fce7f3;
+            --tag-tech-text: #9d174d;
+            --tag-media: #fef3c7;
+            --tag-media-text: #92400e;
+            --tag-foundation: #d1fae5;
+            --tag-foundation-text: #065f46;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+        }
+        .app { max-width: 1440px; margin: 0 auto; padding: var(--gap); }
+
+        /* ── Header ── */
+        .header {
+            background: var(--header-bg);
+            color: var(--text-light);
+            padding: 20px 28px;
+            border-radius: var(--radius);
+            margin-bottom: var(--gap);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .header h1 { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; }
+        .header-right { display: flex; gap: 10px; align-items: center; }
+        .header-right select, .header-right input {
+            padding: 6px 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 4px;
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+            font-size: 13px;
+        }
+        .header-right select option { background: #1a1a1a; }
+
+        /* ── Tabs ── */
+        .tabs {
+            display: flex;
+            gap: 2px;
+            margin-bottom: var(--gap);
+            background: var(--border);
+            border-radius: var(--radius);
+            padding: 3px;
+        }
+        .tab {
+            padding: 8px 20px;
+            font-size: 13px;
+            font-weight: 500;
+            border: none;
+            background: transparent;
+            color: var(--text-sec);
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.15s;
+        }
+        .tab.active { background: var(--card); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+        .tab:hover:not(.active) { color: var(--text); }
+
+        /* ── KPI Row ── */
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: var(--gap);
+            margin-bottom: var(--gap);
+        }
+        .kpi {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            border: 1px solid var(--border);
+        }
+        .kpi-label { font-size: 11px; color: var(--text-sec); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
+        .kpi-value { font-size: 28px; font-weight: 700; }
+        .kpi-sub { font-size: 12px; color: var(--text-sec); margin-top: 2px; }
+
+        /* ── Pipeline View ── */
+        .pipeline {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+            margin-bottom: var(--gap);
+        }
+        .stage {
+            background: var(--card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            min-height: 300px;
+        }
+        .stage-header {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .stage-name { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stage-count {
+            font-size: 11px;
+            background: var(--bg);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+        .stage-bar { height: 3px; }
+        .stage-cards { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+
+        /* ── Deal Card ── */
+        .deal-card {
+            background: var(--bg);
+            border-radius: 4px;
+            padding: 12px;
+            cursor: pointer;
+            transition: box-shadow 0.15s;
+            border: 1px solid transparent;
+        }
+        .deal-card:hover { border-color: var(--accent); box-shadow: 0 2px 8px rgba(37,99,235,0.1); }
+        .deal-org { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+        .deal-desc { font-size: 11px; color: var(--text-sec); margin-bottom: 6px; line-height: 1.4; }
+        .deal-meta { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+        .tag {
+            font-size: 10px;
+            font-weight: 500;
+            padding: 2px 7px;
+            border-radius: 3px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .tag-edu { background: var(--tag-edu); color: var(--tag-edu-text); }
+        .tag-tech { background: var(--tag-tech); color: var(--tag-tech-text); }
+        .tag-media { background: var(--tag-media); color: var(--tag-media-text); }
+        .tag-foundation { background: var(--tag-foundation); color: var(--tag-foundation-text); }
+        .deal-date { font-size: 10px; color: var(--text-sec); }
+        .deal-owner { font-size: 10px; color: var(--accent); font-weight: 500; }
+        .priority-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+        .priority-high { background: #ef4444; }
+        .priority-medium { background: #f59e0b; }
+        .priority-low { background: #94a3b8; }
+
+        /* ── Table View ── */
+        .table-wrap {
+            background: var(--card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            overflow-x: auto;
+            margin-bottom: var(--gap);
+        }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .data-table thead th {
+            text-align: left;
+            padding: 10px 14px;
+            border-bottom: 2px solid var(--border);
+            color: var(--text-sec);
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            cursor: pointer;
+            user-select: none;
+        }
+        .data-table thead th:hover { color: var(--text); }
+        .data-table tbody td { padding: 10px 14px; border-bottom: 1px solid #f0f0ed; }
+        .data-table tbody tr:hover { background: #fafaf8; }
+        .stage-badge {
+            font-size: 11px;
+            font-weight: 500;
+            padding: 3px 8px;
+            border-radius: 3px;
+            white-space: nowrap;
+        }
+
+        /* ── Contacts View ── */
+        .contacts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: var(--gap);
+            margin-bottom: var(--gap);
+        }
+        .contact-card {
+            background: var(--card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            padding: 18px;
+        }
+        .contact-name { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+        .contact-title { font-size: 12px; color: var(--text-sec); margin-bottom: 8px; }
+        .contact-org { font-size: 12px; color: var(--accent); font-weight: 500; margin-bottom: 8px; }
+        .contact-notes { font-size: 12px; color: var(--text-sec); line-height: 1.5; }
+        .contact-field { margin-bottom: 4px; }
+        .contact-field-label { font-size: 10px; color: var(--text-sec); text-transform: uppercase; letter-spacing: 0.5px; }
+
+        /* ── Events View ── */
+        .event-card {
+            background: var(--card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            padding: 20px;
+            margin-bottom: var(--gap);
+        }
+        .event-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+        .event-date { font-size: 13px; color: var(--accent); margin-bottom: 12px; }
+        .event-section { margin-bottom: 14px; }
+        .event-section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-sec); margin-bottom: 6px; }
+        .event-target { padding: 8px 12px; background: var(--bg); border-radius: 4px; margin-bottom: 4px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
+
+        /* ── Assets View ── */
+        .assets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: var(--gap);
+            margin-bottom: var(--gap);
+        }
+        .asset-card {
+            background: var(--card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            padding: 18px;
+        }
+        .asset-name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+        .asset-type { font-size: 11px; color: var(--text-sec); text-transform: uppercase; margin-bottom: 8px; }
+        .asset-audiences { display: flex; gap: 4px; flex-wrap: wrap; }
+
+        /* ── Form View ── */
+        .form-section {
+            background: var(--card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            padding: 24px;
+            margin-bottom: var(--gap);
+            max-width: 700px;
+        }
+        .form-section h2 { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+        .form-group { margin-bottom: 14px; }
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-sec);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            margin-bottom: 4px;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: inherit;
+            background: var(--bg);
+        }
+        .form-group textarea { min-height: 80px; resize: vertical; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .btn-primary { background: var(--accent); color: #fff; }
+        .btn-primary:hover { background: #1d4ed8; }
+        .btn-secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+        .btn-row { display: flex; gap: 8px; margin-top: 16px; }
+
+        /* ── Charts ── */
+        .charts-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--gap);
+            margin-bottom: var(--gap);
+        }
+        .chart-card {
+            background: var(--card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            padding: 18px 20px;
+        }
+        .chart-card h3 { font-size: 13px; font-weight: 600; margin-bottom: 12px; color: var(--text-sec); text-transform: uppercase; letter-spacing: 0.4px; }
+        .chart-card canvas { max-height: 220px; }
+
+        /* ── Detail Modal ── */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 100;
+            justify-content: center;
+            align-items: flex-start;
+            padding-top: 60px;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: var(--card);
+            border-radius: var(--radius);
+            width: 600px;
+            max-width: 90vw;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 28px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+        .modal h2 { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+        .modal-close {
+            float: right;
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            color: var(--text-sec);
+            padding: 4px 8px;
+        }
+        .modal-section { margin-top: 16px; }
+        .modal-section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-sec); margin-bottom: 6px; }
+        .modal-field { margin-bottom: 10px; }
+        .modal-field dt { font-size: 11px; color: var(--text-sec); }
+        .modal-field dd { font-size: 14px; }
+        .activity-item { padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+        .activity-date { font-size: 11px; color: var(--text-sec); }
+
+        .view { display: none; }
+        .view.active { display: block; }
+
+        /* ── Responsive ── */
+        @media (max-width: 1100px) {
+            .pipeline { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (max-width: 768px) {
+            .pipeline { grid-template-columns: repeat(2, 1fr); }
+            .charts-row { grid-template-columns: 1fr; }
+            .form-row { grid-template-columns: 1fr; }
+        }
+
+        @media print {
+            .tabs, .header-right, .form-section { display: none; }
+            .pipeline { grid-template-columns: repeat(3, 1fr); }
+        }
+        /* ── Login Screen ── */
+        .login-screen {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: var(--bg);
+        }
+        .login-box {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 40px;
+            width: 360px;
+            text-align: center;
+        }
+        .login-box h1 { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+        .login-box p { font-size: 13px; color: var(--text-sec); margin-bottom: 24px; }
+        .login-box input[type="password"] {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: inherit;
+            background: var(--bg);
+            margin-bottom: 12px;
+        }
+        .login-box input[type="password"]:focus { outline: none; border-color: var(--accent); }
+        .login-error { color: #ef4444; font-size: 12px; margin-bottom: 8px; display: none; }
+    </style>
+</head>
+<body>
+
+<!-- Login Screen -->
+<div class="login-screen" id="login-screen">
+    <div class="login-box">
+        <h1>EDU.FYI Pipeline</h1>
+        <p>Enter password to continue</p>
+        <input type="password" id="login-pass" placeholder="Password" onkeydown="if(event.key==='Enter')checkLogin()">
+        <div class="login-error" id="login-error">Incorrect password</div>
+        <button class="btn btn-primary" style="width:100%" onclick="checkLogin()">Enter</button>
+    </div>
+</div>
+
+<script>
+function checkLogin() {
+    const input = document.getElementById('login-pass').value;
+    // Simple hash check — not military-grade, but keeps casual eyes out
+    const hash = Array.from(input).reduce((h, c) => ((h << 5) - h + c.charCodeAt(0)) | 0, 0);
+    if (hash === 1666762267) {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('main-app').style.display = 'block';
+        sessionStorage.setItem('edufyi_auth', '1');
+    } else {
+        document.getElementById('login-error').style.display = 'block';
+        document.getElementById('login-pass').value = '';
+    }
+}
+// Auto-login if already authenticated this session
+if (sessionStorage.getItem('edufyi_auth') === '1') {
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('main-app').style.display = 'block';
+    });
+}
+</script>
+
+<div class="app" id="main-app" style="display:none">
+    <!-- Header -->
+    <div class="header">
+        <h1>EDU.FYI — Partnership Pipeline</h1>
+        <div class="header-right">
+            <select id="filter-type" onchange="app.applyFilters()">
+                <option value="all">All Types</option>
+                <option value="Education">Education</option>
+                <option value="Technology">Technology</option>
+                <option value="Media">Media</option>
+                <option value="Foundation">Foundation</option>
+            </select>
+            <select id="filter-priority" onchange="app.applyFilters()">
+                <option value="all">All Priority</option>
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+            </select>
+            <select id="filter-owner" onchange="app.applyFilters()">
+                <option value="all">All Owners</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <button class="tab active" onclick="app.switchView('pipeline')">Pipeline</button>
+        <button class="tab" onclick="app.switchView('table')">Table</button>
+        <button class="tab" onclick="app.switchView('contacts')">People</button>
+        <button class="tab" onclick="app.switchView('events')">Events</button>
+        <button class="tab" onclick="app.switchView('assets')">Assets</button>
+        <button class="tab" onclick="app.switchView('form')">+ Add / Update</button>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-row" id="kpi-row"></div>
+
+    <!-- Pipeline View -->
+    <div class="view active" id="view-pipeline">
+        <div class="pipeline" id="pipeline-board"></div>
+        <div class="charts-row">
+            <div class="chart-card"><h3>Pipeline by Type</h3><canvas id="chart-type"></canvas></div>
+            <div class="chart-card"><h3>Pipeline by Stage</h3><canvas id="chart-stage"></canvas></div>
+        </div>
+    </div>
+
+    <!-- Table View -->
+    <div class="view" id="view-table">
+        <div class="table-wrap"><table class="data-table" id="deals-table"></table></div>
+    </div>
+
+    <!-- Contacts View -->
+    <div class="view" id="view-contacts">
+        <div class="contacts-grid" id="contacts-grid"></div>
+    </div>
+
+    <!-- Events View -->
+    <div class="view" id="view-events" id="events-view"></div>
+
+    <!-- Assets View -->
+    <div class="view" id="view-assets">
+        <div class="assets-grid" id="assets-grid"></div>
+    </div>
+
+    <!-- Form View -->
+    <div class="view" id="view-form">
+        <div class="form-section">
+            <h2 id="form-title">Add New Opportunity</h2>
+            <input type="hidden" id="form-edit-id" value="">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Organization</label>
+                    <input type="text" id="f-org" placeholder="e.g. Morehouse College">
+                </div>
+                <div class="form-group">
+                    <label>Type</label>
+                    <select id="f-type">
+                        <option value="Education">Education</option>
+                        <option value="Technology">Technology</option>
+                        <option value="Media">Media</option>
+                        <option value="Foundation">Foundation</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Products (hold Ctrl/Cmd to select multiple)</label>
+                <select id="f-products" multiple style="min-height:70px">
+                    <option value="EDU.FYI">EDU.FYI</option>
+                    <option value="Agentic Self">Agentic Self</option>
+                    <option value="Agentic Classroom">Agentic Classroom</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="f-desc" placeholder="What's the opportunity?"></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Stage</label>
+                    <select id="f-stage">
+                        <option value="Awareness">Awareness</option>
+                        <option value="Conversation">Conversation</option>
+                        <option value="Alignment">Alignment</option>
+                        <option value="Proposal">Proposal</option>
+                        <option value="Agreement">Agreement</option>
+                        <option value="Active">Active Partnership</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Priority</label>
+                    <select id="f-priority">
+                        <option value="High">High</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Low">Low</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Owner</label>
+                    <input type="text" id="f-owner" placeholder="e.g. Sean Hobson">
+                </div>
+                <div class="form-group">
+                    <label>Key Contact</label>
+                    <input type="text" id="f-contact" placeholder="Name at org">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Next Step</label>
+                <input type="text" id="f-next" placeholder="What needs to happen next?">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Next Step Date</label>
+                    <input type="date" id="f-date">
+                </div>
+                <div class="form-group">
+                    <label>Event Tie-in</label>
+                    <select id="f-event">
+                        <option value="">None</option>
+                        <option value="ASU+GSV 2026">ASU+GSV Summit 2026</option>
+                        <option value="HBCU Tour">HBCU Campus Tour</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Notes / Activity Log</label>
+                <textarea id="f-notes" placeholder="Latest update..."></textarea>
+            </div>
+            <div class="btn-row">
+                <button class="btn btn-primary" onclick="app.saveDeal()">Save Opportunity</button>
+                <button class="btn btn-secondary" onclick="app.resetForm()">Clear</button>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h2>Add Contact</h2>
+            <div class="form-row">
+                <div class="form-group"><label>Name</label><input type="text" id="fc-name"></div>
+                <div class="form-group"><label>Title</label><input type="text" id="fc-title"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Organization</label><input type="text" id="fc-org"></div>
+                <div class="form-group"><label>Email</label><input type="email" id="fc-email"></div>
+            </div>
+            <div class="form-group"><label>Notes</label><textarea id="fc-notes"></textarea></div>
+            <div class="btn-row">
+                <button class="btn btn-primary" onclick="app.saveContact()">Save Contact</button>
+                <button class="btn btn-secondary" onclick="app.resetContactForm()">Clear</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)app.closeModal()">
+        <div class="modal" id="modal-content"></div>
+    </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  EDU.FYI PIPELINE DATA
+//  Update this data via the form, or ask Claude to
+//  update it conversationally.
+//  Last updated: 2026-03-05
+// ═══════════════════════════════════════════════════
+
+const PIPELINE_DATA = {
+    deals: [
+        {
+            id: "d1",
+            org: "Arden University (UK)",
+            type: "Education",
+            desc: "Full product suite opportunity — EDU.FYI, Agentic Self, and Agentic Classroom.",
+            stage: "Conversation",
+            priority: "High",
+            owner: "Sean Hobson",
+            contact: "",
+            nextStep: "",
+            nextDate: "",
+            event: "",
+            pitch: "Full suite: platform + curriculum + classroom transformation. International market entry.",
+            products: ["EDU.FYI", "Agentic Self", "Agentic Classroom"],
+            notes: "UK-based university. Three distinct products. First international partnership opportunity.",
+            activity: []
+        },
+        {
+            id: "d2",
+            org: "Compton College",
+            type: "Education",
+            desc: "EDU.FYI, Agentic Self, and Agentic Classroom — full product suite for community college.",
+            stage: "Conversation",
+            priority: "High",
+            owner: "will.i.am / Sean Hobson",
+            contact: "",
+            nextStep: "",
+            nextDate: "",
+            event: "",
+            pitch: "Community college: equity, access, affordability. will.i.am connection to Compton narrative.",
+            products: ["EDU.FYI", "Agentic Self", "Agentic Classroom"],
+            notes: "Strong narrative alignment — will.i.am's roots, equity mission, community college access. Full product suite opportunity.",
+            activity: []
+        },
+        {
+            id: "d3",
+            org: "AWS",
+            type: "Technology",
+            desc: "EDU.FYI infrastructure/platform partnership.",
+            stage: "Conversation",
+            priority: "High",
+            owner: "Sean Hobson",
+            contact: "",
+            nextStep: "",
+            nextDate: "",
+            event: "",
+            pitch: "Cloud infrastructure for institutional AI at scale",
+            products: ["EDU.FYI"],
+            notes: "Technology partnership — cloud/infrastructure layer for EDU.FYI platform.",
+            activity: []
+        },
+        {
+            id: "d8",
+            org: "Arizona State University",
+            type: "Education",
+            desc: "Primary co-development partner. Phase 2 active: evaluation, iteration & expansion through Dec 2026.",
+            stage: "Active",
+            priority: "High",
+            owner: "Sean Hobson",
+            contact: "President Michael Crow",
+            nextStep: "Phase 2 milestone review — deployment/adoption strategy",
+            nextDate: "",
+            event: "",
+            pitch: "Co-development partner — not a customer. Institutional proving ground.",
+            products: ["EDU.FYI", "Agentic Self", "Agentic Classroom"],
+            notes: "24-month SOW (June 2025–May 2027). Phase 2 active. Agentic Self course running with will.i.am. Provost selecting next 3 courses to 'edufy'.",
+            activity: [
+                { date: "2026-02-27", text: "Week 7 of Agentic Self course — Pillar 3 Action-Based Layer" },
+                { date: "2026-02-03", text: "Chris H. deliverables update — 7 items tracked" }
+            ]
+        },
+        {
+            id: "d4",
+            org: "NVIDIA",
+            type: "Technology",
+            desc: "EDU.FYI platform + Agentic Classroom. GPU compute for agentic AI in education.",
+            stage: "Active",
+            priority: "High",
+            owner: "Sean Hobson",
+            contact: "",
+            nextStep: "",
+            nextDate: "",
+            event: "ASU+GSV 2026",
+            pitch: "GPU-rich compute for institutional AI. Project Genesis alignment.",
+            products: ["EDU.FYI", "Agentic Classroom"],
+            notes: "Key technology partner. Aligns with Project Genesis narrative and '5th wave' positioning. MMC strategy includes NVIDIA as proof point.",
+            activity: []
+        },
+        {
+            id: "d5",
+            org: "LG",
+            type: "Technology",
+            desc: "Agentic Classroom — hardware/display partnership for AI-enabled learning spaces.",
+            stage: "Conversation",
+            priority: "Medium",
+            owner: "Lee Chan / Sean Hobson",
+            contact: "",
+            nextStep: "",
+            nextDate: "",
+            event: "",
+            pitch: "Hardware for the Agentic Classroom: displays, devices, smart learning environments",
+            products: ["Agentic Classroom"],
+            notes: "Hardware partnership focused on Agentic Classroom product. Physical infrastructure for AI-enabled learning spaces.",
+            activity: []
+        },
+        {
+            id: "d6",
+            org: "Qualcomm",
+            type: "Technology",
+            desc: "EDU.FYI, Agentic Self, Agentic Classroom — full suite. Edge AI for offline/underserved learners.",
+            stage: "Agreement",
+            priority: "High",
+            owner: "will.i.am / Sean Hobson",
+            contact: "",
+            nextStep: "",
+            nextDate: "",
+            event: "",
+            pitch: "Edge AI: Snapdragon for offline-capable, real-time AI in bandwidth-limited environments",
+            products: ["EDU.FYI", "Agentic Self", "Agentic Classroom"],
+            notes: "Decision matrix completed. Strategic fit strong for underserved learners. will.i.am has existing Qualcomm brand ambassador relationship. Full product suite.",
+            activity: []
+        },
+        {
+            id: "d7",
+            org: "Oden College",
+            type: "Education",
+            desc: "EDU.FYI platform partnership.",
+            stage: "Conversation",
+            priority: "Medium",
+            owner: "Sean Hobson",
+            contact: "",
+            nextStep: "",
+            nextDate: "",
+            event: "",
+            pitch: "Institutional AI platform — own your data, build your own agents",
+            products: ["EDU.FYI"],
+            notes: "Education institution opportunity for EDU.FYI platform.",
+            activity: []
+        }
+    ],
+
+    contacts: [
+        { name: "will.i.am", title: "Co-Founder / Faculty Lead", org: "FYI.AI / EDU.FYI", email: "", notes: "Creative/culture leader. Pitching to HBCUs, community colleges. ASU+GSV stage presence. Teaching Agentic Self." },
+        { name: "Lee Chan", title: "Brand Lead", org: "FYI.AI", email: "", notes: "FYI brand strategy. Partner-facing materials. Coordinating with ASU brand team." },
+        { name: "Sean Hobson", title: "AVP & Chief Design Officer", org: "EdPlus at ASU", email: "sean.hobson@asu.edu", notes: "Partnerships, business development, coordination. Bridge between ASU and FYI.AI." },
+        { name: "Michael Crow", title: "President", org: "Arizona State University", email: "", notes: "Co-founder of EDU.FYI. Institutional credibility. Presidential-level introductions." }
+    ],
+
+    events: [
+        {
+            name: "ASU+GSV Summit 2026",
+            date: "April 2026",
+            location: "San Diego, CA",
+            status: "Preparing",
+            targets: [
+                { org: "NVIDIA", action: "EDU.FYI + Agentic Classroom positioning", priority: "High" },
+                { org: "Education Partners", action: "will.i.am stage time, targeted meetings", priority: "High" },
+                { org: "Technology Partners", action: "AWS, Qualcomm, LG bilateral meetings", priority: "Medium" }
+            ],
+            prep: "Confirm will.i.am stage time. Prep partner-specific one-pagers. Schedule bilateral meetings."
+        }
+    ],
+
+    assets: [
+        { name: "EDU.FYI Big Idea", type: "Narrative / Positioning", audiences: ["All"], gdrive: "1wF1MRoWrUR7lUAaO1cd4hixE6XZ0_IZL0uTXZ8awj68", notes: "Foundational narrative — classroom as infrastructure." },
+        { name: "EDU.FYI Positioning", type: "Positioning", audiences: ["All"], gdrive: "1ceW8-q0kA_1INTAQlYqxpe8GtmqO35FIVI6q1acj2rQ", notes: "Creativity + Innovation framing." },
+        { name: "Business Plan Executive Summary", type: "Business Plan", audiences: ["Investors", "Leadership"], gdrive: "1dgG6HAPlZTUi6Gn7_8NqjWyOzajz3rMkbNBu-W_wyeE", notes: "Core business case and 36-month pro forma." },
+        { name: "FYI Investor Pitch Deck", type: "Pitch Deck", audiences: ["Investors"], gdrive: "1QhIEiX1wpNo7Ue0LZJsCq4TpCdpYm0v8T18GatsWMu4", notes: "Forever Learning Companion vision." },
+        { name: "Product Deck Content", type: "Product Deck", audiences: ["Universities", "Partners"], gdrive: "1HvpgQb5dnb3MvtapI9AnvopjCnVvhdpx1gIoBU5Gyy0", notes: "Persona Builder, Voice Lab, Depth Dashboard." },
+        { name: "Press Releases & Talking Points", type: "PR / Messaging", audiences: ["Media", "All"], gdrive: "1PuScEAEVK8FYexmYZgl5Y-mFzp8ivyWgbi5gMqq0ryg", notes: "will.i.am and Crow talking points." },
+        { name: "Agentic Self Syllabus", type: "Course Material", audiences: ["Universities"], gdrive: "1Tv_60kf8kmfmNbIUt1PX3jZlf9gc_b6k39RiENv5tgI", notes: "Proof point: live course with will.i.am at ASU." }
+    ],
+
+    stages: ["Awareness", "Conversation", "Alignment", "Proposal", "Agreement", "Active"],
+    stageColors: {
+        "Awareness": "#94a3b8",
+        "Conversation": "#60a5fa",
+        "Alignment": "#a78bfa",
+        "Proposal": "#f59e0b",
+        "Agreement": "#34d399",
+        "Active": "#10b981"
+    }
+};
+
+// ═══════════════════════════════════════════════════
+//  APP CONTROLLER
+// ═══════════════════════════════════════════════════
+
+class PipelineApp {
+    constructor(data) {
+        this.data = data;
+        this.filtered = [...data.deals];
+        this.charts = {};
+        this.currentView = 'pipeline';
+        this.init();
+    }
+
+    init() {
+        this.populateOwnerFilter();
+        this.renderKPIs();
+        this.renderPipeline();
+        this.renderCharts();
+        this.renderTable();
+        this.renderContacts();
+        this.renderEvents();
+        this.renderAssets();
+    }
+
+    // ── Filters ──
+    populateOwnerFilter() {
+        const sel = document.getElementById('filter-owner');
+        const owners = [...new Set(this.data.deals.map(d => d.owner))].sort();
+        owners.forEach(o => {
+            const opt = document.createElement('option');
+            opt.value = o; opt.textContent = o;
+            sel.appendChild(opt);
+        });
+    }
+
+    applyFilters() {
+        const type = document.getElementById('filter-type').value;
+        const priority = document.getElementById('filter-priority').value;
+        const owner = document.getElementById('filter-owner').value;
+
+        this.filtered = this.data.deals.filter(d => {
+            if (type !== 'all' && d.type !== type) return false;
+            if (priority !== 'all' && d.priority !== priority) return false;
+            if (owner !== 'all' && d.owner !== owner) return false;
+            return true;
+        });
+
+        this.renderKPIs();
+        this.renderPipeline();
+        this.updateCharts();
+        this.renderTable();
+    }
+
+    // ── Views ──
+    switchView(view) {
+        this.currentView = view;
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.getElementById('view-' + view).classList.add('active');
+        document.querySelectorAll('.tab').forEach((t, i) => {
+            t.classList.toggle('active', ['pipeline','table','contacts','events','assets','form'][i] === view);
+        });
+    }
+
+    // ── KPIs ──
+    renderKPIs() {
+        const d = this.filtered;
+        const total = d.length;
+        const active = d.filter(x => x.stage === 'Active').length;
+        const hot = d.filter(x => x.priority === 'High' && x.stage !== 'Active').length;
+        const upcoming = d.filter(x => x.nextDate && new Date(x.nextDate) <= new Date(Date.now() + 14*86400000)).length;
+        const gsvLinked = d.filter(x => x.event === 'ASU+GSV 2026').length;
+
+        document.getElementById('kpi-row').innerHTML = `
+            <div class="kpi"><div class="kpi-label">Total Opportunities</div><div class="kpi-value">${total}</div><div class="kpi-sub">${this.data.stages.map(s => d.filter(x=>x.stage===s).length).join(' → ')}</div></div>
+            <div class="kpi"><div class="kpi-label">Active Partnerships</div><div class="kpi-value">${active}</div><div class="kpi-sub">Live & generating value</div></div>
+            <div class="kpi"><div class="kpi-label">High Priority Pipeline</div><div class="kpi-value">${hot}</div><div class="kpi-sub">Needs attention now</div></div>
+            <div class="kpi"><div class="kpi-label">Actions Next 14 Days</div><div class="kpi-value">${upcoming}</div><div class="kpi-sub">Follow-ups due</div></div>
+            <div class="kpi"><div class="kpi-label">ASU+GSV Targets</div><div class="kpi-value">${gsvLinked}</div><div class="kpi-sub">Linked to summit</div></div>
+        `;
+    }
+
+    // ── Pipeline Board ──
+    renderPipeline() {
+        const board = document.getElementById('pipeline-board');
+        board.innerHTML = this.data.stages.map(stage => {
+            const deals = this.filtered.filter(d => d.stage === stage);
+            const color = this.data.stageColors[stage];
+            return `
+                <div class="stage">
+                    <div class="stage-header">
+                        <span class="stage-name">${stage === 'Active' ? 'Active Partnership' : stage}</span>
+                        <span class="stage-count">${deals.length}</span>
+                    </div>
+                    <div class="stage-bar" style="background:${color}"></div>
+                    <div class="stage-cards">
+                        ${deals.map(d => this.renderDealCard(d)).join('')}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    renderDealCard(d) {
+        const typeClass = 'tag-' + d.type.toLowerCase().replace('foundation','foundation');
+        const priClass = d.priority === 'High' ? 'priority-high' : d.priority === 'Medium' ? 'priority-medium' : 'priority-low';
+        const products = d.products ? d.products.map(p => `<span style="font-size:9px;background:#f0fdf4;color:#166534;padding:1px 5px;border-radius:2px">${p}</span>`).join('') : '';
+        return `
+            <div class="deal-card" onclick="app.openDeal('${d.id}')">
+                <div class="deal-org">${d.org}</div>
+                <div class="deal-desc">${d.desc.substring(0, 90)}${d.desc.length > 90 ? '...' : ''}</div>
+                <div class="deal-meta">
+                    <span class="tag ${typeClass}">${d.type}</span>
+                    <span class="priority-dot ${priClass}"></span>
+                    ${d.event ? `<span class="deal-date">${d.event}</span>` : ''}
+                </div>
+                ${products ? `<div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:6px">${products}</div>` : ''}
+            </div>
+        `;
+    }
+
+    // ── Charts ──
+    renderCharts() {
+        const typeCtx = document.getElementById('chart-type').getContext('2d');
+        const types = ['Education','Technology','Media','Foundation'];
+        const typeColors = ['#2563eb','#ec4899','#f59e0b','#10b981'];
+        this.charts.type = new Chart(typeCtx, {
+            type: 'doughnut',
+            data: {
+                labels: types,
+                datasets: [{ data: types.map(t => this.filtered.filter(d => d.type === t).length), backgroundColor: typeColors.map(c => c + 'cc'), borderColor: '#fff', borderWidth: 2 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '55%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 12, font: { size: 11 } } } } }
+        });
+
+        const stageCtx = document.getElementById('chart-stage').getContext('2d');
+        this.charts.stage = new Chart(stageCtx, {
+            type: 'bar',
+            data: {
+                labels: this.data.stages.map(s => s === 'Active' ? 'Active' : s),
+                datasets: [{ data: this.data.stages.map(s => this.filtered.filter(d => d.stage === s).length), backgroundColor: this.data.stages.map(s => this.data.stageColors[s] + 'cc'), borderRadius: 4 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } }, x: { grid: { display: false } } } }
+        });
+    }
+
+    updateCharts() {
+        const types = ['Education','Technology','Media','Foundation'];
+        this.charts.type.data.datasets[0].data = types.map(t => this.filtered.filter(d => d.type === t).length);
+        this.charts.type.update('none');
+        this.charts.stage.data.datasets[0].data = this.data.stages.map(s => this.filtered.filter(d => d.stage === s).length);
+        this.charts.stage.update('none');
+    }
+
+    // ── Table ──
+    renderTable() {
+        const t = document.getElementById('deals-table');
+        t.innerHTML = `
+            <thead><tr>
+                <th>Organization</th><th>Type</th><th>Products</th><th>Stage</th><th>Priority</th><th>Next Step</th><th>Event</th>
+            </tr></thead>
+            <tbody>
+                ${this.filtered.map(d => {
+                    const color = this.data.stageColors[d.stage];
+                    const prods = d.products ? d.products.map(p => `<span style="font-size:10px;background:#f0fdf4;color:#166534;padding:1px 5px;border-radius:2px;white-space:nowrap">${p}</span>`).join(' ') : '—';
+                    return `<tr style="cursor:pointer" onclick="app.openDeal('${d.id}')">
+                        <td style="font-weight:600">${d.org}</td>
+                        <td><span class="tag tag-${d.type.toLowerCase()}">${d.type}</span></td>
+                        <td>${prods}</td>
+                        <td><span class="stage-badge" style="background:${color}22;color:${color}">${d.stage}</span></td>
+                        <td>${d.priority}</td>
+                        <td style="max-width:220px;font-size:12px">${d.nextStep || '—'}</td>
+                        <td style="font-size:12px">${d.event || '—'}</td>
+                    </tr>`;
+                }).join('')}
+            </tbody>
+        `;
+    }
+
+    // ── Contacts ──
+    renderContacts() {
+        document.getElementById('contacts-grid').innerHTML = this.data.contacts.map(c => `
+            <div class="contact-card">
+                <div class="contact-name">${c.name}</div>
+                <div class="contact-title">${c.title}</div>
+                <div class="contact-org">${c.org}</div>
+                ${c.email ? `<div class="contact-field"><span class="contact-field-label">Email</span><br>${c.email}</div>` : ''}
+                <div class="contact-notes">${c.notes}</div>
+            </div>
+        `).join('');
+    }
+
+    // ── Events ──
+    renderEvents() {
+        document.getElementById('view-events').innerHTML = this.data.events.map(e => `
+            <div class="event-card">
+                <div class="event-title">${e.name}</div>
+                <div class="event-date">${e.date} · ${e.location} · <strong>${e.status}</strong></div>
+                <div class="event-section">
+                    <div class="event-section-title">Target Meetings & Actions</div>
+                    ${e.targets.map(t => `
+                        <div class="event-target">
+                            <span><strong>${t.org}</strong> — ${t.action}</span>
+                            <span class="priority-dot priority-${t.priority.toLowerCase()}"></span>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="event-section">
+                    <div class="event-section-title">Prep Needed</div>
+                    <div style="font-size:13px;color:var(--text-sec)">${e.prep}</div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // ── Assets ──
+    renderAssets() {
+        document.getElementById('assets-grid').innerHTML = this.data.assets.map(a => `
+            <div class="asset-card">
+                <div class="asset-name">${a.name}</div>
+                <div class="asset-type">${a.type}</div>
+                <div class="asset-audiences">${a.audiences.map(au => `<span class="tag tag-edu">${au}</span>`).join('')}</div>
+                <div style="font-size:12px;color:var(--text-sec);margin-top:8px">${a.notes}</div>
+                ${a.gdrive ? `<div style="margin-top:8px"><a href="https://docs.google.com/document/d/${a.gdrive}" target="_blank" style="font-size:12px;color:var(--accent)">Open in Drive →</a></div>` : ''}
+            </div>
+        `).join('');
+    }
+
+    // ── Deal Detail Modal ──
+    openDeal(id) {
+        const d = this.data.deals.find(x => x.id === id);
+        if (!d) return;
+        const color = this.data.stageColors[d.stage];
+        document.getElementById('modal-content').innerHTML = `
+            <button class="modal-close" onclick="app.closeModal()">✕</button>
+            <h2>${d.org}</h2>
+            <div style="margin-top:4px">
+                <span class="tag tag-${d.type.toLowerCase()}">${d.type}</span>
+                <span class="stage-badge" style="background:${color}22;color:${color};margin-left:6px">${d.stage}</span>
+                <span style="margin-left:8px;font-size:12px;color:var(--text-sec)">Priority: ${d.priority}</span>
+            </div>
+
+            <div class="modal-section">
+                <div class="modal-field"><dt>Description</dt><dd>${d.desc}</dd></div>
+                ${d.products ? `<div class="modal-field"><dt>Products</dt><dd>${d.products.map(p => `<span style="display:inline-block;font-size:12px;background:#f0fdf4;color:#166534;padding:2px 8px;border-radius:3px;margin-right:4px">${p}</span>`).join('')}</dd></div>` : ''}
+                ${d.owner ? `<div class="modal-field"><dt>Owner</dt><dd>${d.owner}</dd></div>` : ''}
+                ${d.contact ? `<div class="modal-field"><dt>Key Contact</dt><dd>${d.contact}</dd></div>` : ''}
+                ${d.event ? `<div class="modal-field"><dt>Event</dt><dd>${d.event}</dd></div>` : ''}
+            </div>
+
+            <div class="modal-section">
+                <div class="modal-section-title">Next Step</div>
+                <div style="font-size:14px;font-weight:500">${d.nextStep}</div>
+                ${d.nextDate ? `<div style="font-size:12px;color:var(--accent);margin-top:4px">Due: ${d.nextDate}</div>` : ''}
+            </div>
+
+            ${d.pitch ? `<div class="modal-section"><div class="modal-section-title">Pitch Angle</div><div style="font-size:13px">${d.pitch}</div></div>` : ''}
+
+            <div class="modal-section">
+                <div class="modal-section-title">Notes</div>
+                <div style="font-size:13px;line-height:1.6">${d.notes}</div>
+            </div>
+
+            ${d.activity && d.activity.length > 0 ? `
+                <div class="modal-section">
+                    <div class="modal-section-title">Activity Log</div>
+                    ${d.activity.map(a => `<div class="activity-item"><span class="activity-date">${a.date}</span> — ${a.text}</div>`).join('')}
+                </div>
+            ` : ''}
+
+            <div class="btn-row" style="margin-top:20px">
+                <button class="btn btn-primary" onclick="app.editDeal('${d.id}')">Edit</button>
+            </div>
+        `;
+        document.getElementById('modal-overlay').classList.add('active');
+    }
+
+    closeModal() {
+        document.getElementById('modal-overlay').classList.remove('active');
+    }
+
+    // ── Form: Edit Deal ──
+    editDeal(id) {
+        const d = this.data.deals.find(x => x.id === id);
+        if (!d) return;
+        this.closeModal();
+        this.switchView('form');
+        document.getElementById('form-edit-id').value = d.id;
+        document.getElementById('form-title').textContent = 'Edit: ' + d.org;
+        document.getElementById('f-org').value = d.org;
+        document.getElementById('f-type').value = d.type;
+        document.getElementById('f-desc').value = d.desc;
+        document.getElementById('f-stage').value = d.stage;
+        document.getElementById('f-priority').value = d.priority;
+        document.getElementById('f-owner').value = d.owner;
+        document.getElementById('f-contact').value = d.contact;
+        document.getElementById('f-next').value = d.nextStep;
+        document.getElementById('f-date').value = d.nextDate;
+        document.getElementById('f-event').value = d.event || '';
+        document.getElementById('f-notes').value = d.notes;
+        const prodSel = document.getElementById('f-products');
+        Array.from(prodSel.options).forEach(o => { o.selected = d.products && d.products.includes(o.value); });
+    }
+
+    saveDeal() {
+        const editId = document.getElementById('form-edit-id').value;
+        const prodSel = document.getElementById('f-products');
+        const products = Array.from(prodSel.selectedOptions).map(o => o.value);
+        const deal = {
+            id: editId || 'd' + (Date.now()),
+            org: document.getElementById('f-org').value,
+            type: document.getElementById('f-type').value,
+            desc: document.getElementById('f-desc').value,
+            stage: document.getElementById('f-stage').value,
+            priority: document.getElementById('f-priority').value,
+            owner: document.getElementById('f-owner').value,
+            contact: document.getElementById('f-contact').value,
+            nextStep: document.getElementById('f-next').value,
+            nextDate: document.getElementById('f-date').value,
+            event: document.getElementById('f-event').value,
+            pitch: '',
+            products: products,
+            notes: document.getElementById('f-notes').value,
+            activity: []
+        };
+
+        if (editId) {
+            const idx = this.data.deals.findIndex(d => d.id === editId);
+            if (idx >= 0) {
+                deal.activity = this.data.deals[idx].activity;
+                deal.pitch = this.data.deals[idx].pitch;
+                this.data.deals[idx] = deal;
+            }
+        } else {
+            this.data.deals.push(deal);
+        }
+
+        this.applyFilters();
+        this.renderContacts();
+        this.renderEvents();
+        this.resetForm();
+        this.switchView('pipeline');
+    }
+
+    resetForm() {
+        document.getElementById('form-edit-id').value = '';
+        document.getElementById('form-title').textContent = 'Add New Opportunity';
+        ['f-org','f-desc','f-owner','f-contact','f-next','f-notes'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('f-type').value = 'Education';
+        document.getElementById('f-stage').value = 'Awareness';
+        document.getElementById('f-priority').value = 'Medium';
+        document.getElementById('f-date').value = '';
+        document.getElementById('f-event').value = '';
+        Array.from(document.getElementById('f-products').options).forEach(o => o.selected = false);
+    }
+
+    saveContact() {
+        this.data.contacts.push({
+            name: document.getElementById('fc-name').value,
+            title: document.getElementById('fc-title').value,
+            org: document.getElementById('fc-org').value,
+            email: document.getElementById('fc-email').value,
+            notes: document.getElementById('fc-notes').value
+        });
+        this.renderContacts();
+        this.resetContactForm();
+    }
+
+    resetContactForm() {
+        ['fc-name','fc-title','fc-org','fc-email','fc-notes'].forEach(id => document.getElementById(id).value = '');
+    }
+}
+
+const app = new PipelineApp(PIPELINE_DATA);
+</script>
+</body>
+</html>
