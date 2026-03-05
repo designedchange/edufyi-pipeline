@@ -209,7 +209,10 @@ tr:hover { background: #f8fafc; }
       <h1>EDU.FYI Customer Pipeline</h1>
       <div class="subtitle">Drag to move stages &bull; Click to edit &bull; Updated: <span id="last-updated"></span></div>
     </div>
-    <button class="add-btn" onclick="openAddDeal()">+ Add Opportunity</button>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="add-btn" onclick="openAddDeal()">+ Add Opportunity</button>
+      <button onclick="resetToDefaults()" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:11px;background:white;color:var(--muted);cursor:pointer" title="Reset data to latest built-in defaults">Reset Data</button>
+    </div>
   </header>
 
   <div class="kpi-row" id="kpi-row"></div>
@@ -517,7 +520,10 @@ const PRODUCT_PRESETS = {
   'Bundle': { revPerLearner: 350, platformCost: 75, contentCost: 40, supportCost: 20, implFee: 50000 }
 };
 
-let DATA = JSON.parse(localStorage.getItem('edufyi_data')) || {
+// Data version — bump this whenever defaults are updated so stale localStorage is replaced
+const DATA_VERSION = 2;
+
+const DEFAULT_DATA = {
   deals: [
     { id:'d1', org:'Arden University', type:'Education', desc:'UK-based university — full product suite', stage:'Conversation', priority:'High', owner:'Sean Hobson', contact:'', nextStep:'Follow-up meeting', nextDate:'', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'', learners:2000, fyiLink:'', activity:[{date:'2026-03-01',text:'Initial outreach sent'},{date:'2026-02-20',text:'Created opportunity'}] },
     { id:'d2', org:'Compton College', type:'Education', desc:'Community college — full suite', stage:'Conversation', priority:'High', owner:'will.i.am', contact:'', nextStep:'Campus visit', nextDate:'', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'', learners:1500, fyiLink:'', activity:[{date:'2026-03-02',text:'will.i.am intro call'},{date:'2026-02-15',text:'Created opportunity'}] },
@@ -576,7 +582,26 @@ let DATA = JSON.parse(localStorage.getItem('edufyi_data')) || {
   ]
 };
 
-function saveData() { localStorage.setItem('edufyi_data', JSON.stringify(DATA)); }
+// Load data: use cache only if version matches; otherwise reset to fresh defaults
+const cachedVersion = parseInt(localStorage.getItem('edufyi_data_version') || '0');
+let DATA;
+if (cachedVersion >= DATA_VERSION) {
+  DATA = JSON.parse(localStorage.getItem('edufyi_data')) || DEFAULT_DATA;
+} else {
+  DATA = DEFAULT_DATA;
+  localStorage.setItem('edufyi_data', JSON.stringify(DATA));
+  localStorage.setItem('edufyi_data_version', String(DATA_VERSION));
+}
+
+function resetToDefaults() {
+  if (!confirm('Reset all data to the latest built-in defaults? Any manual edits you\'ve made in the browser will be lost.')) return;
+  DATA = JSON.parse(JSON.stringify(DEFAULT_DATA));
+  localStorage.setItem('edufyi_data', JSON.stringify(DATA));
+  localStorage.setItem('edufyi_data_version', String(DATA_VERSION));
+  render();
+}
+
+function saveData() { localStorage.setItem('edufyi_data', JSON.stringify(DATA)); localStorage.setItem('edufyi_data_version', String(DATA_VERSION)); }
 
 // AUTH
 function checkLogin() {
