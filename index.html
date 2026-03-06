@@ -580,30 +580,30 @@ const STAGE_LABELS = { Conversation:'Conversation', Proposal:'Proposal', Agreeme
 const STAGE_COLORS = { Conversation:'#3b82f6', Proposal:'#f59e0b', Agreement:'#f97316', Active:'#16a34a' };
 const STAGE_PROB = { Conversation:0.15, Proposal:0.50, Agreement:0.80, Active:1.0 };
 
-// Product presets — placeholder economics per product (user will refine with actuals)
+// Product presets — zeroed out until Lee provides actual unit economics
 const PRODUCT_PRESETS = {
-  'EDU.FYI': { revPerLearner: 120, platformCost: 25, contentCost: 12, supportCost: 8, implFee: 20000 },
-  'Agentic Self': { revPerLearner: 80, platformCost: 20, contentCost: 18, supportCost: 6, implFee: 15000 },
-  'Agentic Classroom': { revPerLearner: 200, platformCost: 45, contentCost: 20, supportCost: 12, implFee: 35000 },
-  'Bundle': { revPerLearner: 350, platformCost: 75, contentCost: 40, supportCost: 20, implFee: 50000 }
+  'EDU.FYI': { revPerLearner: 0, platformCost: 0, contentCost: 0, supportCost: 0, implFee: 0 },
+  'Agentic Self': { revPerLearner: 0, platformCost: 0, contentCost: 0, supportCost: 0, implFee: 0 },
+  'Agentic Classroom': { revPerLearner: 0, platformCost: 0, contentCost: 0, supportCost: 0, implFee: 0 },
+  'Bundle': { revPerLearner: 0, platformCost: 0, contentCost: 0, supportCost: 0, implFee: 0 }
 };
 
 let AUTH_TOKEN = sessionStorage.getItem('edufyi_token') || localStorage.getItem('edufyi_token') || '';
 const API_BASE = ''; // Same origin — Vercel serves both
 
 // Data version — bump this whenever defaults are updated so stale localStorage is replaced
-const DATA_VERSION = 8;
+const DATA_VERSION = 9;
 
 const DEFAULT_DATA = {
   deals: [
-    { id:'d1', org:'Arden University', type:'Education', desc:'UK-based university — full product suite', stage:'Conversation', priority:'High', owner:'Sean Hobson', contact:'', sponsor:'', nextStep:'Follow-up meeting', nextDate:'', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'', learners:2000, fyiLink:'', dealStructure:['Per-Student'], dealValue:700000, activity:[{date:'2026-03-01',text:'Initial outreach sent'},{date:'2026-02-20',text:'Created opportunity'}] },
-    { id:'d2', org:'Compton College', type:'Education', desc:'Community college — full suite', stage:'Conversation', priority:'High', owner:'will.i.am', contact:'', sponsor:'', nextStep:'Campus visit', nextDate:'', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'', learners:1500, fyiLink:'', dealStructure:['Per-Student'], dealValue:525000, activity:[{date:'2026-03-02',text:'will.i.am intro call'},{date:'2026-02-15',text:'Created opportunity'}] },
-    { id:'d3', org:'AWS', type:'Technology', desc:'Platform infrastructure partnership', stage:'Conversation', priority:'High', owner:'Sean Hobson', contact:'', sponsor:'', nextStep:'Technical alignment call', nextDate:'', products:['EDU.FYI'], notes:'', learners:0, fyiLink:'', dealStructure:['Institution'], dealValue:500000, activity:[{date:'2026-02-28',text:'Intro meeting completed'}] },
-    { id:'d4', org:'NVIDIA', type:'Technology', desc:'AI compute & classroom tech', stage:'Active', priority:'High', owner:'Lee Chan', contact:'', sponsor:'', nextStep:'Quarterly review', nextDate:'2026-04-01', products:['EDU.FYI','Agentic Classroom'], notes:'', learners:0, fyiLink:'', dealStructure:['Institution'], dealValue:750000, activity:[{date:'2026-03-01',text:'Partnership active'},{date:'2026-02-01',text:'Agreement signed'}] },
-    { id:'d5', org:'LG', type:'Technology', desc:'Agentic Classroom hardware', stage:'Conversation', priority:'Medium', owner:'Sean Hobson', contact:'', sponsor:'', nextStep:'Product demo', nextDate:'', products:['Agentic Classroom'], notes:'', learners:0, fyiLink:'', dealStructure:['Institution'], dealValue:300000, activity:[{date:'2026-02-25',text:'Initial conversation'}] },
-    { id:'d6', org:'Qualcomm', type:'Technology', desc:'3-phase partnership: Edge AI curriculum + Snapdragon devices + Mobile/XR. Qualcomm provides hardware & AI certificate; EDU.FYI is the student platform. Key narrative: on-device AI making student agents faster, more private, more powerful.', stage:'Agreement', priority:'High', owner:'Lee Chan', contact:'Rodrigo Caruso Neves do Amaral', sponsor:'John Smee', nextStep:'Alignment call to discuss counter-proposal & narrative framing', nextDate:'2026-03-15', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'Phase 1: AI curriculum + Qualcomm Certificate (current semester) — counter: certificate should connect to EDU.FYI agent work, not standalone Snapdragon course. Phase 2: Device program (next semester) — counter: consider AI glasses/tablets instead of laptops (students already have laptops), lead with student use cases not hardware. Phase 3: Mobile + XR (2027) — counter: ground in learning scenarios (exam prep agents on phone, immersive nursing/engineering). Key contacts: John Smee, Rodrigo Amaral, Vijay Shirsathe, Hemanth Sampath, Patrick Costello.', learners:5000, fyiLink:'', dealStructure:['Institution'], dealValue:2000000, activity:[{date:'2026-03-05',text:'Counter-proposal sent by Lee Chan — reframe around student experience & EDU.FYI platform'},{date:'2026-02-12',text:'Qualcomm sent 3-phase brief (Rodrigo Amaral) — AI curriculum, Snapdragon laptops, Mobile/XR'},{date:'2026-03-03',text:'Moved to Agreement'},{date:'2026-02-10',text:'Proposal submitted'}] },
-    { id:'d7', org:'Oden College', type:'Education', desc:'EDU.FYI platform adoption', stage:'Conversation', priority:'Medium', owner:'Sean Hobson', contact:'', sponsor:'', nextStep:'Initial pitch', nextDate:'', products:['EDU.FYI'], notes:'', learners:800, fyiLink:'', dealStructure:['Per-Student'], dealValue:96000, activity:[{date:'2026-02-22',text:'Created opportunity'}] },
-    { id:'d8', org:'Arizona State University', type:'Education', desc:'Founding partner — full integration', stage:'Active', priority:'High', owner:'Sean Hobson', contact:'', sponsor:'Michael Crow', nextStep:'Ongoing integration', nextDate:'', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'', learners:5000, fyiLink:'', dealStructure:['Institution'], dealValue:3000000, activity:[{date:'2026-03-01',text:'Spring semester active'},{date:'2026-01-15',text:'Full launch'}] }
+    { id:'d1', org:'Arden University', type:'Education', desc:'UK-based university — full product suite', stage:'Conversation', priority:'High', owner:'Sean Hobson', contact:'', sponsor:'', nextStep:'Follow-up meeting', nextDate:'', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'', learners:2000, fyiLink:'', dealStructure:['Per-Student'], dealValue:0, activity:[{date:'2026-03-01',text:'Initial outreach sent'},{date:'2026-02-20',text:'Created opportunity'}] },
+    { id:'d2', org:'Compton College', type:'Education', desc:'Community college — full suite', stage:'Conversation', priority:'High', owner:'will.i.am', contact:'', sponsor:'', nextStep:'Campus visit', nextDate:'', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'', learners:1500, fyiLink:'', dealStructure:['Per-Student'], dealValue:0, activity:[{date:'2026-03-02',text:'will.i.am intro call'},{date:'2026-02-15',text:'Created opportunity'}] },
+    { id:'d3', org:'AWS', type:'Technology', desc:'Platform infrastructure partnership', stage:'Conversation', priority:'High', owner:'Sean Hobson', contact:'', sponsor:'', nextStep:'Technical alignment call', nextDate:'', products:['EDU.FYI'], notes:'', learners:0, fyiLink:'', dealStructure:['Institution'], dealValue:0, activity:[{date:'2026-02-28',text:'Intro meeting completed'}] },
+    { id:'d4', org:'NVIDIA', type:'Technology', desc:'AI compute & classroom tech', stage:'Active', priority:'High', owner:'Lee Chan', contact:'', sponsor:'', nextStep:'Quarterly review', nextDate:'2026-04-01', products:['EDU.FYI','Agentic Classroom'], notes:'', learners:0, fyiLink:'', dealStructure:['Institution'], dealValue:0, activity:[{date:'2026-03-01',text:'Partnership active'},{date:'2026-02-01',text:'Agreement signed'}] },
+    { id:'d5', org:'LG', type:'Technology', desc:'Agentic Classroom hardware', stage:'Conversation', priority:'Medium', owner:'Sean Hobson', contact:'', sponsor:'', nextStep:'Product demo', nextDate:'', products:['Agentic Classroom'], notes:'', learners:0, fyiLink:'', dealStructure:['Institution'], dealValue:0, activity:[{date:'2026-02-25',text:'Initial conversation'}] },
+    { id:'d6', org:'Qualcomm', type:'Technology', desc:'3-phase partnership: Edge AI curriculum + Snapdragon devices + Mobile/XR. Qualcomm provides hardware & AI certificate; EDU.FYI is the student platform. Key narrative: on-device AI making student agents faster, more private, more powerful.', stage:'Agreement', priority:'High', owner:'Lee Chan', contact:'Rodrigo Caruso Neves do Amaral', sponsor:'John Smee', nextStep:'Alignment call to discuss counter-proposal & narrative framing', nextDate:'2026-03-15', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'Phase 1: AI curriculum + Qualcomm Certificate (current semester) — counter: certificate should connect to EDU.FYI agent work, not standalone Snapdragon course. Phase 2: Device program (next semester) — counter: consider AI glasses/tablets instead of laptops (students already have laptops), lead with student use cases not hardware. Phase 3: Mobile + XR (2027) — counter: ground in learning scenarios (exam prep agents on phone, immersive nursing/engineering). Key contacts: John Smee, Rodrigo Amaral, Vijay Shirsathe, Hemanth Sampath, Patrick Costello.', learners:5000, fyiLink:'', dealStructure:['Institution'], dealValue:0, activity:[{date:'2026-03-05',text:'Counter-proposal sent by Lee Chan — reframe around student experience & EDU.FYI platform'},{date:'2026-02-12',text:'Qualcomm sent 3-phase brief (Rodrigo Amaral) — AI curriculum, Snapdragon laptops, Mobile/XR'},{date:'2026-03-03',text:'Moved to Agreement'},{date:'2026-02-10',text:'Proposal submitted'}] },
+    { id:'d7', org:'Oden College', type:'Education', desc:'EDU.FYI platform adoption', stage:'Conversation', priority:'Medium', owner:'Sean Hobson', contact:'', sponsor:'', nextStep:'Initial pitch', nextDate:'', products:['EDU.FYI'], notes:'', learners:800, fyiLink:'', dealStructure:['Per-Student'], dealValue:0, activity:[{date:'2026-02-22',text:'Created opportunity'}] },
+    { id:'d8', org:'Arizona State University', type:'Education', desc:'Founding partner — full integration', stage:'Active', priority:'High', owner:'Sean Hobson', contact:'', sponsor:'Michael Crow', nextStep:'Ongoing integration', nextDate:'', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'', learners:5000, fyiLink:'', dealStructure:['Institution'], dealValue:0, activity:[{date:'2026-03-01',text:'Spring semester active'},{date:'2026-01-15',text:'Full launch'}] }
   ],
   comms: [
     { id:'c1', type:'Email', deal:'d1', people:'Sean Hobson', subject:'Arden initial outreach', direction:'Outbound', date:'2026-03-01', fyiLink:'', summary:'Sent intro email with EDU.FYI overview deck.', followup:'' },
@@ -711,6 +711,13 @@ function migrateData() {
   (DATA.comms || []).forEach(c => {
     if (c.attachments === undefined) c.attachments = [];
   });
+
+  // === ONE-TIME MIGRATIONS (run once based on cachedVersion) ===
+
+  // v9: Zero out all placeholder dealValues — real numbers TBD with Lee
+  if (cachedVersion < 9) {
+    DATA.deals.forEach(d => { d.dealValue = 0; });
+  }
 }
 migrateData();
 
@@ -865,31 +872,40 @@ function renderPipelineMetrics() {
     const stArr = Array.isArray(d.dealStructure) ? d.dealStructure : (d.dealStructure ? [d.dealStructure] : []);
     stArr.forEach(st => { stTotals[st] = (stTotals[st] || 0) + dv; });
   });
+  const hasValues = totalPV > 0;
   const chips = Object.entries(stTotals).filter(([,v])=>v>0).map(([k,v])=>`<span style="display:inline-block;font-size:10px;background:#f1f5f9;padding:2px 8px;border-radius:4px;margin:1px">${k}: ${fmt(v)}</span>`).join(' ');
+  const structureCountChips = (() => {
+    const counts = {};
+    deals.forEach(d => {
+      const stArr = Array.isArray(d.dealStructure) ? d.dealStructure : (d.dealStructure ? [d.dealStructure] : []);
+      stArr.forEach(st => { counts[st] = (counts[st] || 0) + 1; });
+    });
+    return Object.entries(counts).map(([k,v])=>`<span style="display:inline-block;font-size:10px;background:#f1f5f9;padding:2px 8px;border-radius:4px;margin:1px">${k}: ${v} deal${v!==1?'s':''}</span>`).join(' ');
+  })();
   document.getElementById('pipeline-metrics').innerHTML = `
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px">
       <div style="background:linear-gradient(135deg,#1e293b,#334155);color:white;border-radius:12px;padding:16px">
         <div style="font-size:10px;text-transform:uppercase;opacity:0.7;letter-spacing:0.5px">Total Pipeline</div>
-        <div style="font-size:26px;font-weight:700;margin-top:2px">${fmt(totalPV)}</div>
-        <div style="font-size:11px;opacity:0.7">${deals.length} deals &bull; ${totalL.toLocaleString()} learners</div>
+        <div style="font-size:26px;font-weight:700;margin-top:2px">${hasValues ? fmt(totalPV) : deals.length + ' deals'}</div>
+        <div style="font-size:11px;opacity:0.7">${hasValues ? deals.length + ' deals &bull; ' : ''}${totalL.toLocaleString()} learners</div>
       </div>
       <div style="background:linear-gradient(135deg,#1e40af,#2563eb);color:white;border-radius:12px;padding:16px">
         <div style="font-size:10px;text-transform:uppercase;opacity:0.7;letter-spacing:0.5px">Weighted Pipeline</div>
-        <div style="font-size:26px;font-weight:700;margin-top:2px">${fmt(totalWV)}</div>
-        <div style="font-size:11px;opacity:0.7">Probability-adjusted value</div>
+        <div style="font-size:26px;font-weight:700;margin-top:2px">${hasValues ? fmt(totalWV) : '—'}</div>
+        <div style="font-size:11px;opacity:0.7">${hasValues ? 'Probability-adjusted value' : 'Add deal values to calculate'}</div>
       </div>
       <div style="background:linear-gradient(135deg,#166534,#15803d);color:white;border-radius:12px;padding:16px">
         <div style="font-size:10px;text-transform:uppercase;opacity:0.7;letter-spacing:0.5px">Run Rate</div>
-        <div style="font-size:26px;font-weight:700;margin-top:2px">${fmt(activeRev)}</div>
-        <div style="font-size:11px;opacity:0.7">${activeCount} active partner${activeCount!==1?'s':''} &bull; ${activeL.toLocaleString()} learners</div>
+        <div style="font-size:26px;font-weight:700;margin-top:2px">${activeRev > 0 ? fmt(activeRev) : activeCount + ' active'}</div>
+        <div style="font-size:11px;opacity:0.7">${activeCount} partner${activeCount!==1?'s':''} &bull; ${activeL.toLocaleString()} learners</div>
       </div>
       <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:16px">
         <div style="font-size:10px;text-transform:uppercase;color:var(--muted);letter-spacing:0.5px">Late-Stage Pipeline</div>
-        <div style="font-size:26px;font-weight:700;color:var(--orange);margin-top:2px">${fmt(lateStage)}</div>
-        <div style="font-size:11px;color:var(--muted)">${lateCount} deal${lateCount!==1?'s':''} in Proposal/Agreement</div>
+        <div style="font-size:26px;font-weight:700;color:var(--orange);margin-top:2px">${lateStage > 0 ? fmt(lateStage) : lateCount + ' deal' + (lateCount!==1?'s':'')}</div>
+        <div style="font-size:11px;color:var(--muted)">in Proposal/Agreement</div>
       </div>
     </div>
-    <div style="margin-top:6px;padding:0 0 4px">${chips}</div>`;
+    <div style="margin-top:6px;padding:0 0 4px">${hasValues ? chips : structureCountChips}</div>`;
 }
 
 function renderKPIs() {
@@ -1131,7 +1147,7 @@ function renderProgressGoal() {
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">
       <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:16px">
         <div style="font-size:10px;text-transform:uppercase;color:var(--muted);letter-spacing:0.5px">Avg Deal Size</div>
-        <div style="font-size:22px;font-weight:700;margin-top:2px">${fmt(deals.length ? totalPipelineValue/deals.length : 0)}</div>
+        <div style="font-size:22px;font-weight:700;margin-top:2px">${totalPipelineValue > 0 ? fmt(totalPipelineValue/deals.length) : '—'}</div>
       </div>
       <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:16px">
         <div style="font-size:10px;text-transform:uppercase;color:var(--muted);letter-spacing:0.5px">Avg Rev / Learner</div>
