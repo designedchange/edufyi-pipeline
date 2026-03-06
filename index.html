@@ -223,6 +223,7 @@ tr:hover { background: #f8fafc; }
     </div>
   </header>
 
+  <div id="pipeline-metrics" style="padding:0 24px;margin-bottom:4px"></div>
   <div class="kpi-row" id="kpi-row"></div>
 
   <div class="tabs">
@@ -652,39 +653,70 @@ const DEFAULT_DATA = {
   ]
 };
 
-// Load data: use cache only if version matches; otherwise reset to fresh defaults
+// Load data: ALWAYS keep user data. Only use defaults as seed for brand-new installs.
 const cachedVersion = parseInt(localStorage.getItem('edufyi_data_version') || '0');
 let DATA;
-if (cachedVersion >= DATA_VERSION) {
-  DATA = JSON.parse(localStorage.getItem('edufyi_data')) || DEFAULT_DATA;
+const cached = localStorage.getItem('edufyi_data');
+
+if (cached) {
+  // User has existing data — KEEP IT. Never overwrite with defaults.
+  DATA = JSON.parse(cached);
 } else {
-  // Stale or missing cache — use updated defaults
-  DATA = DEFAULT_DATA;
-  localStorage.setItem('edufyi_data', JSON.stringify(DATA));
-  localStorage.setItem('edufyi_data_version', String(DATA_VERSION));
+  // First-time user — seed with defaults
+  DATA = JSON.parse(JSON.stringify(DEFAULT_DATA));
 }
 
-// Ensure every deal has new fields populated — fills from defaults if missing
-function repairDealFields() {
-  (DATA.deals || []).forEach(d => {
-    const def = DEFAULT_DATA.deals.find(dd => dd.id === d.id);
-    if (def) {
-      if (!d.dealValue && def.dealValue) d.dealValue = def.dealValue;
-      if (!d.dealStructure && def.dealStructure) d.dealStructure = def.dealStructure;
-      if (!d.attachments && def.attachments) d.attachments = def.attachments;
+// Migrate / repair: add new fields to existing records without overwriting user edits
+function migrateData() {
+  // Ensure all top-level collections exist
+  if (!DATA.deals) DATA.deals = [];
+  if (!DATA.comms) DATA.comms = [];
+  if (!DATA.people) DATA.people = [];
+  if (!DATA.tasks) DATA.tasks = [];
+  if (!DATA.assets) DATA.assets = [];
+  if (!DATA.templates) DATA.templates = DEFAULT_DATA.templates || [];
+
+  // Repair each deal — only fill fields that are MISSING, never overwrite existing values
+  DATA.deals.forEach(d => {
+    // Ensure required fields exist with safe defaults
+    if (d.dealValue === undefined || d.dealValue === null) {
+      const def = DEFAULT_DATA.deals.find(dd => dd.id === d.id);
+      d.dealValue = (def && def.dealValue) || 0;
     }
-    // Migrate dealStructure from string to array
+    if (!d.dealStructure) {
+      const def = DEFAULT_DATA.deals.find(dd => dd.id === d.id);
+      d.dealStructure = (def && def.dealStructure) || ['Per-Student'];
+    }
+    if (d.attachments === undefined) d.attachments = [];
+    if (d.activity === undefined) d.activity = [];
+    if (d.products === undefined) d.products = [];
+    if (d.sponsor === undefined) d.sponsor = '';
+    if (d.contact === undefined) d.contact = '';
+    if (d.fyiLink === undefined) d.fyiLink = '';
+    if (d.learners === undefined) d.learners = 0;
+
+    // Schema migration: dealStructure string → array
     if (d.dealStructure && !Array.isArray(d.dealStructure)) {
       d.dealStructure = [d.dealStructure];
     }
     if (!d.dealStructure) d.dealStructure = [];
-    // Ensure stage is valid (repair old Awareness/Alignment stages)
+
+    // Schema migration: old stage names
     if (!STAGES.includes(d.stage)) {
       if (d.stage === 'Awareness' || d.stage === 'Alignment') d.stage = 'Conversation';
     }
   });
+
+  // Repair comms — ensure attachments field exists
+  (DATA.comms || []).forEach(c => {
+    if (c.attachments === undefined) c.attachments = [];
+  });
 }
-repairDealFields();
+migrateData();
+
+// Save current version so we know what migrations have run
+localStorage.setItem('edufyi_data', JSON.stringify(DATA));
+localStorage.setItem('edufyi_data_version', String(DATA_VERSION));
 
 function resetToDefaults() {
   if (!confirm('Reset all data to the latest built-in defaults? Any manual edits you\'ve made in the browser will be lost.')) return;
@@ -715,22 +747,10 @@ async function loadDataFromBackend() {
     });
     if (res.ok) {
       const remote = await res.json();
-      // Only override if remote has data
+      // Supabase is source of truth — use remote data if it has deals
       if (remote.deals && remote.deals.length > 0) {
-        // Merge: fill in any missing new fields from defaults so Supabase gaps don't zero-out values
-        if (remote.deals) {
-          remote.deals.forEach(d => {
-            const def = DEFAULT_DATA.deals.find(dd => dd.id === d.id);
-            if (def) {
-              if (d.dealValue === undefined || d.dealValue === null) d.dealValue = def.dealValue || 0;
-              if (!d.dealStructure) d.dealStructure = def.dealStructure || ['Per-Student'];
-              if (!d.attachments) d.attachments = def.attachments || [];
-              if (!d.activity) d.activity = def.activity || [];
-            }
-          });
-        }
         DATA = remote;
-        repairDealFields();
+        migrateData(); // fill missing fields, fix schema — never overwrites existing values
         localStorage.setItem('edufyi_data', JSON.stringify(DATA));
       }
     }
@@ -827,9 +847,49 @@ function getFilteredDeals() {
 
 // RENDER
 function render() {
-  renderKPIs(); renderKanban(); renderTable(); renderPeople(); renderAssets(); renderTasks(); renderTimeline();
+  renderPipelineMetrics(); renderKPIs(); renderKanban(); renderTable(); renderPeople(); renderAssets(); renderTasks(); renderTimeline();
   populateOwnerFilter(); populateOwnerSelect(); renderCharts(); renderProgressGoal();
   document.getElementById('last-updated').textContent = new Date().toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+}
+
+function renderPipelineMetrics() {
+  const deals = DATA.deals || [];
+  let totalPV = 0, totalWV = 0, totalL = 0, activeCount = 0, activeRev = 0, activeL = 0, lateStage = 0, lateCount = 0;
+  const stTotals = {};
+  deals.forEach(d => {
+    const dv = d.dealValue || 0;
+    const prob = STAGE_PROB[d.stage] || 0;
+    totalPV += dv; totalWV += dv * prob; totalL += d.learners || 0;
+    if (d.stage === 'Active') { activeCount++; activeRev += dv; activeL += d.learners || 0; }
+    if (['Proposal','Agreement'].includes(d.stage)) { lateStage += dv; lateCount++; }
+    const stArr = Array.isArray(d.dealStructure) ? d.dealStructure : (d.dealStructure ? [d.dealStructure] : []);
+    stArr.forEach(st => { stTotals[st] = (stTotals[st] || 0) + dv; });
+  });
+  const chips = Object.entries(stTotals).filter(([,v])=>v>0).map(([k,v])=>`<span style="display:inline-block;font-size:10px;background:#f1f5f9;padding:2px 8px;border-radius:4px;margin:1px">${k}: ${fmt(v)}</span>`).join(' ');
+  document.getElementById('pipeline-metrics').innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px">
+      <div style="background:linear-gradient(135deg,#1e293b,#334155);color:white;border-radius:12px;padding:16px">
+        <div style="font-size:10px;text-transform:uppercase;opacity:0.7;letter-spacing:0.5px">Total Pipeline</div>
+        <div style="font-size:26px;font-weight:700;margin-top:2px">${fmt(totalPV)}</div>
+        <div style="font-size:11px;opacity:0.7">${deals.length} deals &bull; ${totalL.toLocaleString()} learners</div>
+      </div>
+      <div style="background:linear-gradient(135deg,#1e40af,#2563eb);color:white;border-radius:12px;padding:16px">
+        <div style="font-size:10px;text-transform:uppercase;opacity:0.7;letter-spacing:0.5px">Weighted Pipeline</div>
+        <div style="font-size:26px;font-weight:700;margin-top:2px">${fmt(totalWV)}</div>
+        <div style="font-size:11px;opacity:0.7">Probability-adjusted value</div>
+      </div>
+      <div style="background:linear-gradient(135deg,#166534,#15803d);color:white;border-radius:12px;padding:16px">
+        <div style="font-size:10px;text-transform:uppercase;opacity:0.7;letter-spacing:0.5px">Run Rate</div>
+        <div style="font-size:26px;font-weight:700;margin-top:2px">${fmt(activeRev)}</div>
+        <div style="font-size:11px;opacity:0.7">${activeCount} active partner${activeCount!==1?'s':''} &bull; ${activeL.toLocaleString()} learners</div>
+      </div>
+      <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:16px">
+        <div style="font-size:10px;text-transform:uppercase;color:var(--muted);letter-spacing:0.5px">Late-Stage Pipeline</div>
+        <div style="font-size:26px;font-weight:700;color:var(--orange);margin-top:2px">${fmt(lateStage)}</div>
+        <div style="font-size:11px;color:var(--muted)">${lateCount} deal${lateCount!==1?'s':''} in Proposal/Agreement</div>
+      </div>
+    </div>
+    <div style="margin-top:6px;padding:0 0 4px">${chips}</div>`;
 }
 
 function renderKPIs() {
@@ -1068,26 +1128,19 @@ function renderProgressGoal() {
   const structureChips = Object.entries(structureTotals).filter(([,v])=>v>0).map(([k,v])=>`<span style="display:inline-block;font-size:10px;background:#f1f5f9;padding:2px 8px;border-radius:4px;margin:1px">${k}: ${fmt(v)}</span>`).join(' ');
 
   el.innerHTML = `
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px">
-      <div style="background:linear-gradient(135deg,#1e293b,#334155);color:white;border-radius:12px;padding:16px">
-        <div style="font-size:10px;text-transform:uppercase;opacity:0.7;letter-spacing:0.5px">Total Pipeline</div>
-        <div style="font-size:26px;font-weight:700;margin-top:2px">${fmt(totalPipelineValue)}</div>
-        <div style="font-size:11px;opacity:0.7">${deals.length} deals &bull; ${totalLearners.toLocaleString()} learners</div>
-      </div>
-      <div style="background:linear-gradient(135deg,#1e40af,#2563eb);color:white;border-radius:12px;padding:16px">
-        <div style="font-size:10px;text-transform:uppercase;opacity:0.7;letter-spacing:0.5px">Weighted Pipeline</div>
-        <div style="font-size:26px;font-weight:700;margin-top:2px">${fmt(totalWeightedValue)}</div>
-        <div style="font-size:11px;opacity:0.7">Probability-adjusted value</div>
-      </div>
-      <div style="background:linear-gradient(135deg,#166534,#15803d);color:white;border-radius:12px;padding:16px">
-        <div style="font-size:10px;text-transform:uppercase;opacity:0.7;letter-spacing:0.5px">Run Rate</div>
-        <div style="font-size:26px;font-weight:700;margin-top:2px">${fmt(runRate)}</div>
-        <div style="font-size:11px;opacity:0.7">${totalActive} active partner${totalActive!==1?'s':''} &bull; ${activeLearners.toLocaleString()} learners</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">
+      <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:16px">
+        <div style="font-size:10px;text-transform:uppercase;color:var(--muted);letter-spacing:0.5px">Avg Deal Size</div>
+        <div style="font-size:22px;font-weight:700;margin-top:2px">${fmt(deals.length ? totalPipelineValue/deals.length : 0)}</div>
       </div>
       <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:16px">
-        <div style="font-size:10px;text-transform:uppercase;color:var(--muted);letter-spacing:0.5px">Late-Stage Pipeline</div>
-        <div style="font-size:26px;font-weight:700;color:var(--orange);margin-top:2px">${fmt(lateStageValue)}</div>
-        <div style="font-size:11px;color:var(--muted)">${totalProposalPlus - totalActive} deal${(totalProposalPlus-totalActive)!==1?'s':''} in Proposal/Agreement</div>
+        <div style="font-size:10px;text-transform:uppercase;color:var(--muted);letter-spacing:0.5px">Avg Rev / Learner</div>
+        <div style="font-size:22px;font-weight:700;margin-top:2px">${totalLearners ? fmt(totalPipelineValue/totalLearners) : '—'}</div>
+      </div>
+      <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:16px">
+        <div style="font-size:10px;text-transform:uppercase;color:var(--muted);letter-spacing:0.5px">Conversion Rate</div>
+        <div style="font-size:22px;font-weight:700;margin-top:2px">${deals.length ? ((totalActive/deals.length)*100).toFixed(0) : 0}%</div>
+        <div style="font-size:11px;color:var(--muted)">${totalActive} of ${deals.length} deals active</div>
       </div>
     </div>
     <div style="margin-top:6px;padding:4px 0">${structureChips}</div>`;
