@@ -506,6 +506,13 @@ tr:hover { background: #f8fafc; }
   <label>Date</label><input type="date" id="c-date">
   <label>FYI.AI Link</label><input id="c-fyilink" placeholder="https://fyi.ai/u/...">
   <label>Summary</label><textarea id="c-summary" placeholder="Key points, decisions, action items..."></textarea>
+  <label>Attachments</label>
+  <div id="c-attachments-list" style="margin-bottom:8px"></div>
+  <div style="display:flex;gap:6px;margin-bottom:12px">
+    <input id="c-att-name" placeholder="Document name" style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">
+    <input id="c-att-url" placeholder="URL (Google Drive, Dropbox, etc.)" style="flex:2;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">
+    <button type="button" onclick="addCommAttachment()" style="padding:7px 12px;background:var(--accent);color:white;border:none;border-radius:6px;font-size:12px;cursor:pointer;white-space:nowrap">+ Add</button>
+  </div>
   <label>Follow-up Needed?</label>
   <select id="c-followup"><option value="">No</option><option value="Yes">Yes — add to tasks</option></select>
   <label>Follow-up Task</label><input id="c-followup-task" placeholder="e.g. Send revised proposal by Friday">
@@ -1338,6 +1345,7 @@ function renderComms() {
           ${c.fyiLink ? `<a href="${c.fyiLink}" target="_blank" onclick="event.stopPropagation()" style="color:var(--purple);font-weight:600;text-decoration:none">FYI.AI &rarr;</a>` : ''}
         </div>
         ${c.followup ? `<div style="margin-top:4px;font-size:11px;color:var(--orange);font-weight:600">Follow-up: ${c.followup}</div>` : ''}
+        ${(c.attachments && c.attachments.length) ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px">${c.attachments.map(a => `<a href="${a.url}" target="_blank" onclick="event.stopPropagation()" class="att-chip" style="font-size:10px;padding:2px 8px">&#128206; ${a.name}</a>`).join('')}</div>` : ''}
       </div>
     </div>`;
   });
@@ -1350,6 +1358,32 @@ function populateCommDealSelect() {
   s.innerHTML = '<option value="">General</option>' + DATA.deals.map(d => `<option value="${d.id}">${d.org}</option>`).join('');
 }
 
+// COMMS ATTACHMENTS
+let _commAttachments = [];
+
+function renderCommAttachments() {
+  const el = document.getElementById('c-attachments-list');
+  if (!_commAttachments.length) { el.innerHTML = '<span style="font-size:11px;color:var(--muted)">No attachments.</span>'; return; }
+  el.innerHTML = _commAttachments.map((a, i) =>
+    `<a href="${a.url}" target="_blank" class="att-chip" onclick="event.preventDefault();event.stopPropagation()">&#128206; ${a.name} <span class="att-remove" onclick="event.preventDefault();event.stopPropagation();removeCommAttachment(${i})">&times;</span></a>`
+  ).join('');
+}
+
+function addCommAttachment() {
+  const name = document.getElementById('c-att-name').value.trim();
+  const url = document.getElementById('c-att-url').value.trim();
+  if (!name || !url) return;
+  _commAttachments.push({ name, url });
+  document.getElementById('c-att-name').value = '';
+  document.getElementById('c-att-url').value = '';
+  renderCommAttachments();
+}
+
+function removeCommAttachment(idx) {
+  _commAttachments.splice(idx, 1);
+  renderCommAttachments();
+}
+
 function openAddComm() {
   ['c-id', 'c-people', 'c-subject', 'c-fyilink', 'c-summary', 'c-followup-task'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('c-type').value = 'Email';
@@ -1359,6 +1393,8 @@ function openAddComm() {
   document.getElementById('c-followup').value = '';
   document.getElementById('btn-delete-comm').style.display = 'none';
   document.getElementById('comm-modal-title').textContent = 'Log Communication';
+  _commAttachments = [];
+  renderCommAttachments();
   populateCommDealSelect();
   document.getElementById('comm-modal').classList.add('show');
 }
@@ -1377,6 +1413,8 @@ function openEditComm(id) {
   document.getElementById('c-summary').value = c.summary || '';
   document.getElementById('c-followup').value = c.followup ? 'Yes' : '';
   document.getElementById('c-followup-task').value = c.followup || '';
+  _commAttachments = JSON.parse(JSON.stringify(c.attachments || []));
+  renderCommAttachments();
   populateCommDealSelect();
   document.getElementById('c-deal').value = c.deal || '';
   document.getElementById('btn-delete-comm').style.display = 'block';
@@ -1396,7 +1434,8 @@ function saveComm() {
     date: document.getElementById('c-date').value,
     fyiLink: document.getElementById('c-fyilink').value,
     summary: document.getElementById('c-summary').value,
-    followup: followupOpt === 'Yes' ? followupTask : ''
+    followup: followupOpt === 'Yes' ? followupTask : '',
+    attachments: JSON.parse(JSON.stringify(_commAttachments))
   };
   if (!DATA.comms) DATA.comms = [];
   if (id) {
