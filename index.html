@@ -862,17 +862,32 @@ function render() {
 function renderPipelineMetrics() {
   const deals = DATA.deals || [];
   let totalPV = 0, totalWV = 0, totalL = 0, activeCount = 0, activeRev = 0, activeL = 0, lateStage = 0, lateCount = 0;
+  let totalExpenseRR = 0; // expense run rate across active deals
   const stTotals = {};
   deals.forEach(d => {
     const dv = d.dealValue || 0;
     const prob = STAGE_PROB[d.stage] || 0;
     totalPV += dv; totalWV += dv * prob; totalL += d.learners || 0;
-    if (d.stage === 'Active') { activeCount++; activeRev += dv; activeL += d.learners || 0; }
+    if (d.stage === 'Active') {
+      activeCount++; activeRev += dv; activeL += d.learners || 0;
+      // Calculate expenses for active deals: per-learner costs × learners + implementation fees
+      const l = d.learners || 0;
+      let dealExpense = 0;
+      (d.products || []).forEach(p => {
+        const preset = PRODUCT_PRESETS[p];
+        if (preset) {
+          dealExpense += (preset.platformCost + preset.contentCost + preset.supportCost) * l + preset.implFee;
+        }
+      });
+      totalExpenseRR += dealExpense;
+    }
     if (['Proposal','Agreement'].includes(d.stage)) { lateStage += dv; lateCount++; }
     const stArr = Array.isArray(d.dealStructure) ? d.dealStructure : (d.dealStructure ? [d.dealStructure] : []);
     stArr.forEach(st => { stTotals[st] = (stTotals[st] || 0) + dv; });
   });
   const hasValues = totalPV > 0;
+  const hasRunRate = activeRev > 0 || totalExpenseRR > 0;
+  const netRunRate = activeRev - totalExpenseRR;
   const chips = Object.entries(stTotals).filter(([,v])=>v>0).map(([k,v])=>`<span style="display:inline-block;font-size:10px;background:#f1f5f9;padding:2px 8px;border-radius:4px;margin:1px">${k}: ${fmt(v)}</span>`).join(' ');
   const structureCountChips = (() => {
     const counts = {};
@@ -882,6 +897,9 @@ function renderPipelineMetrics() {
     });
     return Object.entries(counts).map(([k,v])=>`<span style="display:inline-block;font-size:10px;background:#f1f5f9;padding:2px 8px;border-radius:4px;margin:1px">${k}: ${v} deal${v!==1?'s':''}</span>`).join(' ');
   })();
+  // Run rate color: green if net positive, red if negative, neutral if zero
+  const rrColor = !hasRunRate ? '#166534' : (netRunRate >= 0 ? '#166534' : '#991b1b');
+  const rrGradient = !hasRunRate ? 'linear-gradient(135deg,#166534,#15803d)' : (netRunRate >= 0 ? 'linear-gradient(135deg,#166534,#15803d)' : 'linear-gradient(135deg,#991b1b,#dc2626)');
   document.getElementById('pipeline-metrics').innerHTML = `
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px">
       <div style="background:linear-gradient(135deg,#1e293b,#334155);color:white;border-radius:12px;padding:16px">
@@ -894,10 +912,10 @@ function renderPipelineMetrics() {
         <div style="font-size:26px;font-weight:700;margin-top:2px">${hasValues ? fmt(totalWV) : '—'}</div>
         <div style="font-size:11px;opacity:0.7">${hasValues ? 'Probability-adjusted value' : 'Add deal values to calculate'}</div>
       </div>
-      <div style="background:linear-gradient(135deg,#166534,#15803d);color:white;border-radius:12px;padding:16px">
-        <div style="font-size:10px;text-transform:uppercase;opacity:0.7;letter-spacing:0.5px">Run Rate</div>
-        <div style="font-size:26px;font-weight:700;margin-top:2px">${activeRev > 0 ? fmt(activeRev) : activeCount + ' active'}</div>
-        <div style="font-size:11px;opacity:0.7">${activeCount} partner${activeCount!==1?'s':''} &bull; ${activeL.toLocaleString()} learners</div>
+      <div style="background:${rrGradient};color:white;border-radius:12px;padding:16px">
+        <div style="font-size:10px;text-transform:uppercase;opacity:0.7;letter-spacing:0.5px">Net Run Rate</div>
+        <div style="font-size:26px;font-weight:700;margin-top:2px">${hasRunRate ? fmt(netRunRate) : activeCount + ' active'}</div>
+        <div style="font-size:11px;opacity:0.7">${hasRunRate ? 'Rev ' + fmt(activeRev) + ' — Exp ' + fmt(totalExpenseRR) : activeCount + ' partner' + (activeCount!==1?'s':'') + ' &bull; ' + activeL.toLocaleString() + ' learners'}</div>
       </div>
       <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:16px">
         <div style="font-size:10px;text-transform:uppercase;color:var(--muted);letter-spacing:0.5px">Late-Stage Pipeline</div>
@@ -1318,6 +1336,7 @@ let forecastChart;
 function renderForecast() {
   const deals = DATA.deals;
   let worst=0, likely=0, best=0;
+  let totalExpense = 0, totalNetLikely = 0;
   let rows = [];
   deals.forEach(d => {
     const prob = STAGE_PROB[d.stage]||0;
@@ -1330,24 +1349,37 @@ function renderForecast() {
       if(!rpl) rpl = 150;
       annualRev = l * rpl;
     }
+    // Calculate annual expense: per-learner costs × learners + implementation fees
+    let annualExp = 0;
+    (d.products || []).forEach(p => {
+      const preset = PRODUCT_PRESETS[p];
+      if (preset) {
+        annualExp += (preset.platformCost + preset.contentCost + preset.supportCost) * l + preset.implFee;
+      }
+    });
     const weighted = annualRev * prob;
+    const weightedExp = annualExp * prob;
+    const netWeighted = weighted - weightedExp;
     worst += annualRev * Math.max(0, prob - 0.15);
     likely += weighted;
     best += annualRev * Math.min(1, prob + 0.15);
-    rows.push({ org:d.org, stage:d.stage, structure: Array.isArray(d.dealStructure) ? d.dealStructure.join(', ') : (d.dealStructure||'—'), learners:l, annualRev, prob, weighted });
+    totalExpense += weightedExp;
+    totalNetLikely += netWeighted;
+    rows.push({ org:d.org, stage:d.stage, structure: Array.isArray(d.dealStructure) ? d.dealStructure.join(', ') : (d.dealStructure||'—'), learners:l, annualRev, annualExp, prob, weighted, weightedExp, netWeighted });
   });
   document.getElementById('forecast-summary').innerHTML = `
-    <div class="forecast-card worst"><div class="fc-label">Conservative</div><div class="fc-value">${fmt(worst)}</div></div>
-    <div class="forecast-card likely"><div class="fc-label">Likely</div><div class="fc-value">${fmt(likely)}</div></div>
-    <div class="forecast-card best"><div class="fc-label">Optimistic</div><div class="fc-value">${fmt(best)}</div></div>`;
-  // Chart
+    <div class="forecast-card worst"><div class="fc-label">Conservative</div><div class="fc-value">${fmt(worst)}</div><div style="font-size:10px;opacity:0.7;margin-top:2px">Revenue only</div></div>
+    <div class="forecast-card likely"><div class="fc-label">Likely Revenue</div><div class="fc-value">${fmt(likely)}</div><div style="font-size:10px;opacity:0.7;margin-top:2px">Probability-weighted</div></div>
+    <div class="forecast-card" style="background:${totalNetLikely>=0?'linear-gradient(135deg,#166534,#15803d)':'linear-gradient(135deg,#991b1b,#dc2626)'};color:white;border-radius:12px;padding:20px"><div class="fc-label" style="opacity:0.8">Net Run Rate (Likely)</div><div class="fc-value">${fmt(totalNetLikely)}</div><div style="font-size:10px;opacity:0.7;margin-top:2px">Rev ${fmt(likely)} — Exp ${fmt(totalExpense)}</div></div>
+    <div class="forecast-card best"><div class="fc-label">Optimistic</div><div class="fc-value">${fmt(best)}</div><div style="font-size:10px;opacity:0.7;margin-top:2px">Revenue only</div></div>`;
+  // Chart — show revenue and expense side by side
   if(forecastChart) forecastChart.destroy();
   const ctx = document.getElementById('chart-forecast');
-  if(ctx) forecastChart = new Chart(ctx, {type:'bar',data:{labels:rows.map(r=>r.org),datasets:[{label:'Weighted Revenue',data:rows.map(r=>r.weighted),backgroundColor:rows.map(r=>STAGE_COLORS[r.stage])},{label:'Full Potential',data:rows.map(r=>r.annualRev),backgroundColor:'rgba(148,163,184,0.3)'}]},options:{plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,ticks:{callback:v=>'$'+v.toLocaleString()}}}}});
-  // Table
-  let h = '<thead><tr><th>Partner</th><th>Structure</th><th>Stage</th><th>Probability</th><th>Learners</th><th>Deal Value</th><th>Weighted</th></tr></thead><tbody>';
-  rows.forEach(r => { h += `<tr><td><strong>${r.org}</strong></td><td style="font-size:11px">${r.structure}</td><td><span class="stage-badge" style="background:${STAGE_COLORS[r.stage]}20;color:${STAGE_COLORS[r.stage]}">${STAGE_LABELS[r.stage]}</span></td><td>${(r.prob*100).toFixed(0)}%</td><td>${r.learners.toLocaleString()}</td><td>${fmt(r.annualRev)}</td><td style="font-weight:700">${fmt(r.weighted)}</td></tr>`; });
-  h += `<tr style="font-weight:700;background:#f8fafc"><td colspan="6">Total Weighted Forecast</td><td>${fmt(likely)}</td></tr></tbody>`;
+  if(ctx) forecastChart = new Chart(ctx, {type:'bar',data:{labels:rows.map(r=>r.org),datasets:[{label:'Weighted Revenue',data:rows.map(r=>r.weighted),backgroundColor:rows.map(r=>STAGE_COLORS[r.stage])},{label:'Weighted Expense',data:rows.map(r=>r.weightedExp),backgroundColor:'rgba(220,38,38,0.3)'},{label:'Full Potential',data:rows.map(r=>r.annualRev),backgroundColor:'rgba(148,163,184,0.15)'}]},options:{plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,ticks:{callback:v=>'$'+v.toLocaleString()}}}}});
+  // Table — includes expense and net columns
+  let h = '<thead><tr><th>Partner</th><th>Stage</th><th>Prob</th><th>Learners</th><th>Revenue</th><th>Expenses</th><th>Wtd Rev</th><th>Wtd Exp</th><th>Net</th></tr></thead><tbody>';
+  rows.forEach(r => { h += `<tr><td><strong>${r.org}</strong></td><td><span class="stage-badge" style="background:${STAGE_COLORS[r.stage]}20;color:${STAGE_COLORS[r.stage]}">${STAGE_LABELS[r.stage]}</span></td><td>${(r.prob*100).toFixed(0)}%</td><td>${r.learners.toLocaleString()}</td><td>${fmt(r.annualRev)}</td><td>${fmt(r.annualExp)}</td><td>${fmt(r.weighted)}</td><td>${fmt(r.weightedExp)}</td><td style="font-weight:700;color:${r.netWeighted>=0?'var(--green)':'var(--red)'}">${fmt(r.netWeighted)}</td></tr>`; });
+  h += `<tr style="font-weight:700;background:#f8fafc"><td colspan="6">Totals (Weighted)</td><td>${fmt(likely)}</td><td>${fmt(totalExpense)}</td><td style="color:${totalNetLikely>=0?'var(--green)':'var(--red)'}">${fmt(totalNetLikely)}</td></tr></tbody>`;
   document.getElementById('forecast-table').innerHTML = h;
 }
 
