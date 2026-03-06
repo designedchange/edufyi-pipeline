@@ -189,6 +189,8 @@ tr:hover { background: #f8fafc; }
 .att-chip:hover { background:var(--accent-light); }
 .att-chip .att-remove { cursor:pointer; color:var(--muted); font-size:12px; margin-left:2px; }
 .att-chip .att-remove:hover { color:var(--red); }
+.att-chip.att-file { background:#f0fdf4; color:#16a34a; }
+.att-chip.att-file:hover { background:#dcfce7; }
 
 @media (max-width: 1000px) { .kanban { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 768px) { .kanban, .task-cols, .wr-grid, .forecast-summary { grid-template-columns: 1fr; } .charts-row { grid-template-columns: 1fr !important; } .kpi-row { grid-template-columns: repeat(2, 1fr); } .calc-grid { grid-template-columns: 1fr; } }
@@ -425,10 +427,16 @@ tr:hover { background: #f8fafc; }
   <label>Notes</label><textarea id="f-notes"></textarea>
   <label>Attachments</label>
   <div id="f-attachments-list" style="margin-bottom:8px"></div>
-  <div style="display:flex;gap:6px;margin-bottom:4px">
-    <input id="f-att-name" placeholder="Document name" style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">
-    <input id="f-att-url" placeholder="URL (Google Drive, Dropbox, etc.)" style="flex:2;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">
-    <button type="button" onclick="addAttachment()" style="padding:7px 12px;background:var(--accent);color:white;border:none;border-radius:6px;font-size:12px;cursor:pointer;white-space:nowrap">+ Add</button>
+  <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px">
+    <label for="f-att-file" style="display:inline-flex;align-items:center;gap:4px;padding:7px 12px;background:var(--accent);color:white;border-radius:6px;font-size:12px;cursor:pointer;white-space:nowrap;font-weight:600;margin:0">&#128206; Upload File</label>
+    <input type="file" id="f-att-file" onchange="handleDealFileUpload(this)" style="display:none" multiple>
+    <span style="font-size:11px;color:var(--muted)">Max 5 MB per file</span>
+  </div>
+  <div style="display:flex;gap:6px;margin-bottom:4px;align-items:center">
+    <span style="font-size:11px;color:var(--muted);white-space:nowrap">Or link:</span>
+    <input id="f-att-name" placeholder="Name" style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">
+    <input id="f-att-url" placeholder="URL (Drive, Dropbox, etc.)" style="flex:2;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">
+    <button type="button" onclick="addAttachment()" style="padding:7px 12px;background:#f1f5f9;color:var(--text);border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;white-space:nowrap">+ Add</button>
   </div>
   <div style="margin-bottom:4px">
     <select id="f-att-vault" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="">— Or link from Doc Vault —</option></select>
@@ -508,10 +516,16 @@ tr:hover { background: #f8fafc; }
   <label>Summary</label><textarea id="c-summary" placeholder="Key points, decisions, action items..."></textarea>
   <label>Attachments</label>
   <div id="c-attachments-list" style="margin-bottom:8px"></div>
-  <div style="display:flex;gap:6px;margin-bottom:12px">
-    <input id="c-att-name" placeholder="Document name" style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">
-    <input id="c-att-url" placeholder="URL (Google Drive, Dropbox, etc.)" style="flex:2;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">
-    <button type="button" onclick="addCommAttachment()" style="padding:7px 12px;background:var(--accent);color:white;border:none;border-radius:6px;font-size:12px;cursor:pointer;white-space:nowrap">+ Add</button>
+  <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px">
+    <label for="c-att-file" style="display:inline-flex;align-items:center;gap:4px;padding:7px 12px;background:var(--accent);color:white;border-radius:6px;font-size:12px;cursor:pointer;white-space:nowrap;font-weight:600;margin:0">&#128206; Upload File</label>
+    <input type="file" id="c-att-file" onchange="handleCommFileUpload(this)" style="display:none" multiple>
+    <span style="font-size:11px;color:var(--muted)">Max 5 MB per file</span>
+  </div>
+  <div style="display:flex;gap:6px;margin-bottom:12px;align-items:center">
+    <span style="font-size:11px;color:var(--muted);white-space:nowrap">Or link:</span>
+    <input id="c-att-name" placeholder="Name" style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">
+    <input id="c-att-url" placeholder="URL (Drive, Dropbox, etc.)" style="flex:2;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">
+    <button type="button" onclick="addCommAttachment()" style="padding:7px 12px;background:#f1f5f9;color:var(--text);border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;white-space:nowrap">+ Add</button>
   </div>
   <label>Follow-up Needed?</label>
   <select id="c-followup"><option value="">No</option><option value="Yes">Yes — add to tasks</option></select>
@@ -835,7 +849,10 @@ function renderKanban() {
         ${d.contact?`<div style="font-size:10px;color:var(--muted);margin-top:1px">Contact: ${d.contact}</div>`:''}
         ${d.nextStep?`<div style="margin-top:4px;font-size:10px;color:var(--muted)">Next: ${d.nextStep}</div>`:''}
         ${d.fyiLink?`<div style="margin-top:4px"><a href="${d.fyiLink}" target="_blank" onclick="event.stopPropagation()" style="font-size:10px;color:var(--purple);font-weight:600;text-decoration:none">FYI.AI Project &rarr;</a></div>`:''}
-        ${(d.attachments&&d.attachments.length)?`<div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:2px">${d.attachments.map(a=>`<a href="${a.url}" target="_blank" onclick="event.stopPropagation()" class="att-chip" title="${a.url}">&#128206; ${a.name}</a>`).join('')}</div>`:''}
+        ${(d.attachments&&d.attachments.length)?`<div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:2px">${d.attachments.map((a,ai)=> a.dataUrl
+          ? `<a href="#" onclick="event.stopPropagation();event.preventDefault();viewAttachment(DATA.deals.find(x=>x.id==='${d.id}').attachments[${ai}].dataUrl,'${(a.name||'file').replace(/'/g,"\\'")}')" class="att-chip att-file">&#128196; ${a.name}</a>`
+          : `<a href="${a.url}" target="_blank" onclick="event.stopPropagation()" class="att-chip" title="${a.url}">&#128206; ${a.name}</a>`
+        ).join('')}</div>`:''}
       </div>`;
     });
     html += '</div>';
@@ -1074,9 +1091,16 @@ let _dealAttachments = []; // temp array while modal is open
 function renderDealAttachments() {
   const el = document.getElementById('f-attachments-list');
   if (!_dealAttachments.length) { el.innerHTML = '<span style="font-size:11px;color:var(--muted)">No documents attached yet.</span>'; return; }
-  el.innerHTML = _dealAttachments.map((a, i) =>
-    `<a href="${a.url}" target="_blank" class="att-chip" onclick="event.preventDefault();event.stopPropagation()">&#128206; ${a.name} <span class="att-remove" onclick="event.preventDefault();event.stopPropagation();removeAttachment(${i})">&times;</span></a>`
-  ).join('');
+  el.innerHTML = _dealAttachments.map((a, i) => {
+    const isFile = a.dataUrl;
+    const icon = isFile ? '&#128196;' : '&#128206;';
+    const cls = isFile ? 'att-chip att-file' : 'att-chip';
+    const href = isFile ? '#' : a.url;
+    const click = isFile
+      ? `event.preventDefault();event.stopPropagation();downloadFileAttachment(${i},'deal')`
+      : `event.preventDefault();event.stopPropagation()`;
+    return `<a href="${href}" target="_blank" class="${cls}" onclick="${click}">${icon} ${a.name} <span style="font-size:9px;color:var(--muted);margin-left:2px">${isFile ? formatFileSize(a.size) : 'link'}</span> <span class="att-remove" onclick="event.preventDefault();event.stopPropagation();removeAttachment(${i})">&times;</span></a>`;
+  }).join('');
 }
 
 function addAttachment() {
@@ -1345,7 +1369,10 @@ function renderComms() {
           ${c.fyiLink ? `<a href="${c.fyiLink}" target="_blank" onclick="event.stopPropagation()" style="color:var(--purple);font-weight:600;text-decoration:none">FYI.AI &rarr;</a>` : ''}
         </div>
         ${c.followup ? `<div style="margin-top:4px;font-size:11px;color:var(--orange);font-weight:600">Follow-up: ${c.followup}</div>` : ''}
-        ${(c.attachments && c.attachments.length) ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px">${c.attachments.map(a => `<a href="${a.url}" target="_blank" onclick="event.stopPropagation()" class="att-chip" style="font-size:10px;padding:2px 8px">&#128206; ${a.name}</a>`).join('')}</div>` : ''}
+        ${(c.attachments && c.attachments.length) ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px">${c.attachments.map((a,ai) => a.dataUrl
+          ? `<a href="#" onclick="event.stopPropagation();event.preventDefault();viewAttachment(DATA.comms.find(x=>x.id==='${c.id}').attachments[${ai}].dataUrl,'${a.name.replace(/'/g,"\\'")}')" class="att-chip att-file" style="font-size:10px;padding:2px 8px">&#128196; ${a.name}</a>`
+          : `<a href="${a.url}" target="_blank" onclick="event.stopPropagation()" class="att-chip" style="font-size:10px;padding:2px 8px">&#128206; ${a.name}</a>`
+        ).join('')}</div>` : ''}
       </div>
     </div>`;
   });
@@ -1364,9 +1391,16 @@ let _commAttachments = [];
 function renderCommAttachments() {
   const el = document.getElementById('c-attachments-list');
   if (!_commAttachments.length) { el.innerHTML = '<span style="font-size:11px;color:var(--muted)">No attachments.</span>'; return; }
-  el.innerHTML = _commAttachments.map((a, i) =>
-    `<a href="${a.url}" target="_blank" class="att-chip" onclick="event.preventDefault();event.stopPropagation()">&#128206; ${a.name} <span class="att-remove" onclick="event.preventDefault();event.stopPropagation();removeCommAttachment(${i})">&times;</span></a>`
-  ).join('');
+  el.innerHTML = _commAttachments.map((a, i) => {
+    const isFile = a.dataUrl;
+    const icon = isFile ? '&#128196;' : '&#128206;';
+    const cls = isFile ? 'att-chip att-file' : 'att-chip';
+    const href = isFile ? '#' : a.url;
+    const click = isFile
+      ? `event.preventDefault();event.stopPropagation();downloadFileAttachment(${i},'comm')`
+      : `event.preventDefault();event.stopPropagation()`;
+    return `<a href="${href}" target="_blank" class="${cls}" onclick="${click}">${icon} ${a.name} <span style="font-size:9px;color:var(--muted);margin-left:2px">${isFile ? formatFileSize(a.size) : 'link'}</span> <span class="att-remove" onclick="event.preventDefault();event.stopPropagation();removeCommAttachment(${i})">&times;</span></a>`;
+  }).join('');
 }
 
 function addCommAttachment() {
@@ -1382,6 +1416,62 @@ function addCommAttachment() {
 function removeCommAttachment(idx) {
   _commAttachments.splice(idx, 1);
   renderCommAttachments();
+}
+
+// FILE UPLOAD HELPERS
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+
+function formatFileSize(bytes) {
+  if (!bytes) return '';
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function handleDealFileUpload(input) {
+  Array.from(input.files).forEach(file => {
+    if (file.size > MAX_FILE_SIZE) { alert(file.name + ' exceeds 5 MB limit.'); return; }
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      _dealAttachments.push({ name: file.name, dataUrl: e.target.result, size: file.size, type: file.type, url: '' });
+      renderDealAttachments();
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value = ''; // reset so same file can be re-uploaded
+}
+
+function handleCommFileUpload(input) {
+  Array.from(input.files).forEach(file => {
+    if (file.size > MAX_FILE_SIZE) { alert(file.name + ' exceeds 5 MB limit.'); return; }
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      _commAttachments.push({ name: file.name, dataUrl: e.target.result, size: file.size, type: file.type, url: '' });
+      renderCommAttachments();
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value = '';
+}
+
+function downloadFileAttachment(idx, context) {
+  const att = context === 'deal' ? _dealAttachments[idx] : _commAttachments[idx];
+  if (!att || !att.dataUrl) return;
+  const a = document.createElement('a');
+  a.href = att.dataUrl;
+  a.download = att.name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+function viewAttachment(dataUrl, name) {
+  const a = document.createElement('a');
+  a.href = dataUrl;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }
 
 function openAddComm() {
