@@ -44,7 +44,7 @@ header .subtitle { color: var(--muted); font-size: 13px; }
 .tab-content.active { display: block; }
 
 /* Kanban */
-.kanban { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; min-height: 400px; }
+.kanban { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; min-height: 400px; }
 .kanban-col { background: #f1f5f9; border-radius: 12px; padding: 10px; min-height: 300px; }
 .kanban-col.drag-over { background: #dbeafe; outline: 2px dashed var(--accent); }
 .kanban-col-header { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 6px 4px; display: flex; justify-content: space-between; align-items: center; }
@@ -190,7 +190,7 @@ tr:hover { background: #f8fafc; }
 .att-chip .att-remove { cursor:pointer; color:var(--muted); font-size:12px; margin-left:2px; }
 .att-chip .att-remove:hover { color:var(--red); }
 
-@media (max-width: 1200px) { .kanban { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 1000px) { .kanban { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 768px) { .kanban, .task-cols, .wr-grid, .forecast-summary { grid-template-columns: 1fr; } .charts-row { grid-template-columns: 1fr !important; } .kpi-row { grid-template-columns: repeat(2, 1fr); } .calc-grid { grid-template-columns: 1fr; } }
 </style>
 </head>
@@ -348,7 +348,7 @@ tr:hover { background: #f8fafc; }
     <h2 style="font-size:18px;margin-bottom:14px">Email Templates</h2>
     <div class="filters" style="margin-bottom:14px">
       <select id="template-stage" onchange="renderTemplates()">
-        <option value="">All Stages</option><option value="Awareness">Awareness</option><option value="Conversation">Conversation</option><option value="Alignment">Alignment</option><option value="Proposal">Proposal</option><option value="Agreement">Agreement</option><option value="Active">Active</option>
+        <option value="">All Stages</option><option value="Conversation">Conversation</option><option value="Proposal">Proposal</option><option value="Agreement">Agreement</option><option value="Active">Active</option>
       </select>
       <select id="template-type" onchange="renderTemplates()">
         <option value="">All Types</option><option value="Education">Education</option><option value="Technology">Technology</option>
@@ -399,7 +399,7 @@ tr:hover { background: #f8fafc; }
   <label>Organization</label><input id="f-org">
   <label>Type</label><select id="f-type"><option value="Education">Education</option><option value="Technology">Technology</option><option value="Media">Media</option><option value="Foundation">Foundation</option></select>
   <label>Description</label><textarea id="f-desc"></textarea>
-  <label>Stage</label><select id="f-stage"><option value="Awareness">Awareness</option><option value="Conversation">Conversation</option><option value="Alignment">Alignment</option><option value="Proposal">Proposal</option><option value="Agreement">Agreement</option><option value="Active">Active Partnership</option></select>
+  <label>Stage</label><select id="f-stage"><option value="Conversation">Conversation</option><option value="Proposal">Proposal</option><option value="Agreement">Agreement</option><option value="Active">Active Partnership</option></select>
   <label>Priority</label><select id="f-priority"><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select>
   <label>Products</label><select id="f-products" multiple><option value="EDU.FYI">EDU.FYI</option><option value="Agentic Self">Agentic Self</option><option value="Agentic Classroom">Agentic Classroom</option></select>
   <label>Owner</label><select id="f-owner"><option value="">Unassigned</option></select>
@@ -529,10 +529,10 @@ tr:hover { background: #f8fafc; }
 </div></div>
 
 <script>
-const STAGES = ['Awareness','Conversation','Alignment','Proposal','Agreement','Active'];
-const STAGE_LABELS = { Awareness:'Awareness', Conversation:'Conversation', Alignment:'Alignment', Proposal:'Proposal', Agreement:'Agreement', Active:'Active Partnership' };
-const STAGE_COLORS = { Awareness:'#94a3b8', Conversation:'#3b82f6', Alignment:'#8b5cf6', Proposal:'#f59e0b', Agreement:'#f97316', Active:'#16a34a' };
-const STAGE_PROB = { Awareness:0.05, Conversation:0.15, Alignment:0.30, Proposal:0.50, Agreement:0.80, Active:1.0 };
+const STAGES = ['Conversation','Proposal','Agreement','Active'];
+const STAGE_LABELS = { Conversation:'Conversation', Proposal:'Proposal', Agreement:'Agreement', Active:'Active Partnership' };
+const STAGE_COLORS = { Conversation:'#3b82f6', Proposal:'#f59e0b', Agreement:'#f97316', Active:'#16a34a' };
+const STAGE_PROB = { Conversation:0.15, Proposal:0.50, Agreement:0.80, Active:1.0 };
 
 // Product presets — placeholder economics per product (user will refine with actuals)
 const PRODUCT_PRESETS = {
@@ -546,7 +546,7 @@ let AUTH_TOKEN = sessionStorage.getItem('edufyi_token') || localStorage.getItem(
 const API_BASE = ''; // Same origin — Vercel serves both
 
 // Data version — bump this whenever defaults are updated so stale localStorage is replaced
-const DATA_VERSION = 4;
+const DATA_VERSION = 5;
 
 const DEFAULT_DATA = {
   deals: [
@@ -598,12 +598,12 @@ const DEFAULT_DATA = {
     { id:'t8', title:'Prepare Qualcomm narrative deck — student outcomes + EDU.FYI platform story', deal:'d6', owner:'Sean Hobson', due:'2026-03-14', priority:'High', status:'To Do', notes:'Reframe 3-phase plan around student experience. Needed before next Qualcomm meeting.' }
   ],
   templates: [
-    { id:'tm1', name:'Initial Outreach — Education', stage:'Awareness', type:'Education', subject:'EDU.FYI — Transforming [Institution] with AI-Powered Learning', body:'Hi [Name],\n\nI\'m reaching out from EDU.FYI, a platform co-founded by Michael Crow and will.i.am that\'s reimagining how learners engage with education through agentic AI.\n\nWe\'re working with institutions like ASU to deliver personalized, AI-native learning experiences at scale. Given [Institution]\'s commitment to [specific initiative], I think there\'s a compelling alignment.\n\nWould you have 20 minutes next week to explore this?\n\nBest,\n[Your name]' },
-    { id:'tm2', name:'Initial Outreach — Technology', stage:'Awareness', type:'Technology', subject:'Partnership Opportunity — EDU.FYI x [Company]', body:'Hi [Name],\n\nEDU.FYI is building the AI-native education platform — co-founded by ASU President Michael Crow and will.i.am. We\'re scaling fast and looking for technology partners who share our vision.\n\n[Company]\'s work in [area] aligns closely with what we\'re building, particularly around [specific capability].\n\nI\'d love to explore how we might work together. Free for a quick call?\n\nBest,\n[Your name]' },
+    { id:'tm1', name:'Initial Outreach — Education', stage:'Conversation', type:'Education', subject:'EDU.FYI — Transforming [Institution] with AI-Powered Learning', body:'Hi [Name],\n\nI\'m reaching out from EDU.FYI, a platform co-founded by Michael Crow and will.i.am that\'s reimagining how learners engage with education through agentic AI.\n\nWe\'re working with institutions like ASU to deliver personalized, AI-native learning experiences at scale. Given [Institution]\'s commitment to [specific initiative], I think there\'s a compelling alignment.\n\nWould you have 20 minutes next week to explore this?\n\nBest,\n[Your name]' },
+    { id:'tm2', name:'Initial Outreach — Technology', stage:'Conversation', type:'Technology', subject:'Partnership Opportunity — EDU.FYI x [Company]', body:'Hi [Name],\n\nEDU.FYI is building the AI-native education platform — co-founded by ASU President Michael Crow and will.i.am. We\'re scaling fast and looking for technology partners who share our vision.\n\n[Company]\'s work in [area] aligns closely with what we\'re building, particularly around [specific capability].\n\nI\'d love to explore how we might work together. Free for a quick call?\n\nBest,\n[Your name]' },
     { id:'tm3', name:'Follow-Up After Meeting', stage:'Conversation', type:'', subject:'Great connecting — next steps for EDU.FYI x [Partner]', body:'Hi [Name],\n\nGreat speaking with you [today/yesterday]. I wanted to recap what we discussed and outline next steps:\n\n• [Key point 1]\n• [Key point 2]\n• [Key point 3]\n\nAs a next step, I\'ll [action item]. On your end, it would be helpful to [their action item].\n\nLooking forward to moving this forward.\n\nBest,\n[Your name]' },
     { id:'tm4', name:'Proposal Introduction', stage:'Proposal', type:'', subject:'EDU.FYI Partnership Proposal for [Partner]', body:'Hi [Name],\n\nFollowing our alignment conversations, I\'m pleased to share our partnership proposal for [Partner].\n\nThe attached outlines:\n• Scope of the partnership\n• Product suite and implementation timeline\n• Investment and economic model\n• Success metrics and milestones\n\nI\'d suggest we schedule a call to walk through this together. How does [date] work?\n\nBest,\n[Your name]' },
     { id:'tm5', name:'Event Pre-Meeting', stage:'', type:'', subject:'See you at [Event] — EDU.FYI meeting request', body:'Hi [Name],\n\nLooking forward to [Event] next [month]. I wanted to reach out ahead of time to set up a meeting.\n\nEDU.FYI has some exciting updates to share, including [teaser]. will.i.am will also be [presenting/available] and would love to connect.\n\nCould we block 30 minutes during the event? Happy to work around your schedule.\n\nBest,\n[Your name]' },
-    { id:'tm6', name:'HBCU / Community College Intro', stage:'Awareness', type:'Education', subject:'will.i.am + EDU.FYI — Bringing AI Learning to [Institution]', body:'Hi [Name],\n\nI\'m writing on behalf of will.i.am and the EDU.FYI team. will.i.am has been deeply committed to expanding access to education through technology, and EDU.FYI is the platform making that vision real.\n\nWe\'re specifically focused on partnering with institutions like [Institution] to bring AI-powered, personalized learning at an accessible price point.\n\nwill.i.am would love to visit campus and share the vision directly. Would there be interest in a conversation?\n\nBest,\n[Your name]' }
+    { id:'tm6', name:'HBCU / Community College Intro', stage:'Conversation', type:'Education', subject:'will.i.am + EDU.FYI — Bringing AI Learning to [Institution]', body:'Hi [Name],\n\nI\'m writing on behalf of will.i.am and the EDU.FYI team. will.i.am has been deeply committed to expanding access to education through technology, and EDU.FYI is the platform making that vision real.\n\nWe\'re specifically focused on partnering with institutions like [Institution] to bring AI-powered, personalized learning at an accessible price point.\n\nwill.i.am would love to visit campus and share the vision directly. Would there be interest in a conversation?\n\nBest,\n[Your name]' }
   ]
 };
 
@@ -1026,7 +1026,7 @@ function populateVaultSelect() {
 }
 
 // DEAL MODAL
-function openAddDeal() { ['f-id','f-org','f-desc','f-contact','f-next','f-date','f-notes','f-learners','f-fyilink','f-deal-value'].forEach(id=>document.getElementById(id).value=''); document.getElementById('f-type').value='Education'; document.getElementById('f-stage').value='Awareness'; document.getElementById('f-priority').value='High'; document.getElementById('f-owner').value=''; document.getElementById('f-deal-structure').value='Per-Student'; Array.from(document.getElementById('f-products').options).forEach(o=>o.selected=false); document.getElementById('btn-delete').style.display='none'; document.getElementById('modal-title').textContent='Add Opportunity'; _dealAttachments=[]; renderDealAttachments(); populateOwnerSelect(); populateVaultSelect(); document.getElementById('deal-modal').classList.add('show'); }
+function openAddDeal() { ['f-id','f-org','f-desc','f-contact','f-next','f-date','f-notes','f-learners','f-fyilink','f-deal-value'].forEach(id=>document.getElementById(id).value=''); document.getElementById('f-type').value='Education'; document.getElementById('f-stage').value='Conversation'; document.getElementById('f-priority').value='High'; document.getElementById('f-owner').value=''; document.getElementById('f-deal-structure').value='Per-Student'; Array.from(document.getElementById('f-products').options).forEach(o=>o.selected=false); document.getElementById('btn-delete').style.display='none'; document.getElementById('modal-title').textContent='Add Opportunity'; _dealAttachments=[]; renderDealAttachments(); populateOwnerSelect(); populateVaultSelect(); document.getElementById('deal-modal').classList.add('show'); }
 function openEditDeal(id) { const d=DATA.deals.find(x=>x.id===id); if(!d) return; document.getElementById('modal-title').textContent='Edit: '+d.org; document.getElementById('f-id').value=d.id; document.getElementById('f-org').value=d.org; document.getElementById('f-type').value=d.type; document.getElementById('f-desc').value=d.desc||''; document.getElementById('f-stage').value=d.stage; document.getElementById('f-priority').value=d.priority; document.getElementById('f-contact').value=d.contact||''; document.getElementById('f-next').value=d.nextStep||''; document.getElementById('f-date').value=d.nextDate||''; document.getElementById('f-notes').value=d.notes||''; document.getElementById('f-learners').value=d.learners||''; document.getElementById('f-fyilink').value=d.fyiLink||''; document.getElementById('f-deal-structure').value=d.dealStructure||'Per-Student'; document.getElementById('f-deal-value').value=d.dealValue||''; populateOwnerSelect(); document.getElementById('f-owner').value=d.owner||''; Array.from(document.getElementById('f-products').options).forEach(o=>{o.selected=d.products&&d.products.includes(o.value);}); _dealAttachments=JSON.parse(JSON.stringify(d.attachments||[])); renderDealAttachments(); populateVaultSelect(); document.getElementById('btn-delete').style.display='block'; document.getElementById('deal-modal').classList.add('show'); }
 function saveDeal() { const id=document.getElementById('f-id').value; const products=Array.from(document.getElementById('f-products').selectedOptions).map(o=>o.value); const dd={org:document.getElementById('f-org').value,type:document.getElementById('f-type').value,desc:document.getElementById('f-desc').value,stage:document.getElementById('f-stage').value,priority:document.getElementById('f-priority').value,owner:document.getElementById('f-owner').value,contact:document.getElementById('f-contact').value,nextStep:document.getElementById('f-next').value,nextDate:document.getElementById('f-date').value,notes:document.getElementById('f-notes').value,learners:parseInt(document.getElementById('f-learners').value)||0,fyiLink:document.getElementById('f-fyilink').value,dealStructure:document.getElementById('f-deal-structure').value,dealValue:parseFloat(document.getElementById('f-deal-value').value)||0,products,attachments:_dealAttachments}; if(id){const deal=DATA.deals.find(d=>d.id===id);Object.assign(deal,dd);deal.activity=deal.activity||[];deal.activity.unshift({date:new Date().toISOString().slice(0,10),text:'Updated deal details'});}else{dd.id='d'+Date.now();dd.activity=[{date:new Date().toISOString().slice(0,10),text:'Created opportunity'}];DATA.deals.push(dd);} saveData(); closeModal('deal-modal'); render(); }
 function deleteDeal() { const id=document.getElementById('f-id').value; if(id&&confirm('Remove this opportunity?')){DATA.deals=DATA.deals.filter(d=>d.id!==id);saveData();closeModal('deal-modal');render();} }
