@@ -27,6 +27,8 @@ function toDB(table: string, row: any): any {
     if ('nextStep' in mapped) { mapped.next_step = mapped.nextStep; delete mapped.nextStep; }
     if ('nextDate' in mapped) { mapped.next_date = mapped.nextDate; delete mapped.nextDate; }
     if ('fyiLink' in mapped) { mapped.fyi_link = mapped.fyiLink; delete mapped.fyiLink; }
+    if ('dealStructure' in mapped) { mapped.deal_structure = mapped.dealStructure; delete mapped.dealStructure; }
+    if ('dealValue' in mapped) { mapped.deal_value = mapped.dealValue; delete mapped.dealValue; }
   }
   if (table === 'comms') {
     if ('deal' in mapped) { mapped.deal_id = mapped.deal; delete mapped.deal; }
@@ -58,6 +60,8 @@ function toFrontend(table: string, row: any): any {
     if ('next_step' in mapped) { mapped.nextStep = mapped.next_step; delete mapped.next_step; }
     if ('next_date' in mapped) { mapped.nextDate = mapped.next_date; delete mapped.next_date; }
     if ('fyi_link' in mapped) { mapped.fyiLink = mapped.fyi_link; delete mapped.fyi_link; }
+    if ('deal_structure' in mapped) { mapped.dealStructure = mapped.deal_structure; delete mapped.deal_structure; }
+    if ('deal_value' in mapped) { mapped.dealValue = mapped.deal_value; delete mapped.deal_value; }
   }
   if (table === 'comms') {
     if ('deal_id' in mapped) { mapped.deal = mapped.deal_id; delete mapped.deal_id; }

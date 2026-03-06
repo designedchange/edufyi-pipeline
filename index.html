@@ -406,6 +406,8 @@ tr:hover { background: #f8fafc; }
   <label>Contact</label><input id="f-contact">
   <label>Next Step</label><input id="f-next">
   <label>Next Date</label><input type="date" id="f-date">
+  <label>Deal Structure</label><select id="f-deal-structure"><option value="Per-Student">Per-Student</option><option value="Institution">Institution (Flat Fee)</option><option value="Philanthropy">Philanthropy / Grant</option><option value="Investment">Investment</option></select>
+  <label>Deal Value ($)</label><input type="number" id="f-deal-value" placeholder="e.g. 500000">
   <label>Est. Learners</label><input type="number" id="f-learners" placeholder="500">
   <label>FYI.AI Project Link</label><input id="f-fyilink" placeholder="https://fyi.ai/u/...">
   <label>Notes</label><textarea id="f-notes"></textarea>
@@ -544,18 +546,18 @@ let AUTH_TOKEN = sessionStorage.getItem('edufyi_token') || localStorage.getItem(
 const API_BASE = ''; // Same origin — Vercel serves both
 
 // Data version — bump this whenever defaults are updated so stale localStorage is replaced
-const DATA_VERSION = 3;
+const DATA_VERSION = 4;
 
 const DEFAULT_DATA = {
   deals: [
-    { id:'d1', org:'Arden University', type:'Education', desc:'UK-based university — full product suite', stage:'Conversation', priority:'High', owner:'Sean Hobson', contact:'', nextStep:'Follow-up meeting', nextDate:'', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'', learners:2000, fyiLink:'', activity:[{date:'2026-03-01',text:'Initial outreach sent'},{date:'2026-02-20',text:'Created opportunity'}] },
-    { id:'d2', org:'Compton College', type:'Education', desc:'Community college — full suite', stage:'Conversation', priority:'High', owner:'will.i.am', contact:'', nextStep:'Campus visit', nextDate:'', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'', learners:1500, fyiLink:'', activity:[{date:'2026-03-02',text:'will.i.am intro call'},{date:'2026-02-15',text:'Created opportunity'}] },
-    { id:'d3', org:'AWS', type:'Technology', desc:'Platform infrastructure partnership', stage:'Conversation', priority:'High', owner:'Sean Hobson', contact:'', nextStep:'Technical alignment call', nextDate:'', products:['EDU.FYI'], notes:'', learners:0, fyiLink:'', activity:[{date:'2026-02-28',text:'Intro meeting completed'}] },
-    { id:'d4', org:'NVIDIA', type:'Technology', desc:'AI compute & classroom tech', stage:'Active', priority:'High', owner:'Lee Chan', contact:'', nextStep:'Quarterly review', nextDate:'2026-04-01', products:['EDU.FYI','Agentic Classroom'], notes:'', learners:0, fyiLink:'', activity:[{date:'2026-03-01',text:'Partnership active'},{date:'2026-02-01',text:'Agreement signed'}] },
-    { id:'d5', org:'LG', type:'Technology', desc:'Agentic Classroom hardware', stage:'Conversation', priority:'Medium', owner:'Sean Hobson', contact:'', nextStep:'Product demo', nextDate:'', products:['Agentic Classroom'], notes:'', learners:0, fyiLink:'', activity:[{date:'2026-02-25',text:'Initial conversation'}] },
-    { id:'d6', org:'Qualcomm', type:'Technology', desc:'3-phase partnership: Edge AI curriculum + Snapdragon devices + Mobile/XR. Qualcomm provides hardware & AI certificate; EDU.FYI is the student platform. Key narrative: on-device AI making student agents faster, more private, more powerful.', stage:'Agreement', priority:'High', owner:'Lee Chan', contact:'Rodrigo Caruso Neves do Amaral', nextStep:'Alignment call to discuss counter-proposal & narrative framing', nextDate:'2026-03-15', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'Phase 1: AI curriculum + Qualcomm Certificate (current semester) — counter: certificate should connect to EDU.FYI agent work, not standalone Snapdragon course. Phase 2: Device program (next semester) — counter: consider AI glasses/tablets instead of laptops (students already have laptops), lead with student use cases not hardware. Phase 3: Mobile + XR (2027) — counter: ground in learning scenarios (exam prep agents on phone, immersive nursing/engineering). Key contacts: John Smee, Rodrigo Amaral, Vijay Shirsathe, Hemanth Sampath, Patrick Costello.', learners:5000, fyiLink:'', activity:[{date:'2026-03-05',text:'Counter-proposal sent by Lee Chan — reframe around student experience & EDU.FYI platform'},{date:'2026-02-12',text:'Qualcomm sent 3-phase brief (Rodrigo Amaral) — AI curriculum, Snapdragon laptops, Mobile/XR'},{date:'2026-03-03',text:'Moved to Agreement'},{date:'2026-02-10',text:'Proposal submitted'}] },
-    { id:'d7', org:'Oden College', type:'Education', desc:'EDU.FYI platform adoption', stage:'Conversation', priority:'Medium', owner:'Sean Hobson', contact:'', nextStep:'Initial pitch', nextDate:'', products:['EDU.FYI'], notes:'', learners:800, fyiLink:'', activity:[{date:'2026-02-22',text:'Created opportunity'}] },
-    { id:'d8', org:'Arizona State University', type:'Education', desc:'Founding partner — full integration', stage:'Active', priority:'High', owner:'Sean Hobson', contact:'Michael Crow', nextStep:'Ongoing integration', nextDate:'', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'', learners:5000, fyiLink:'', activity:[{date:'2026-03-01',text:'Spring semester active'},{date:'2026-01-15',text:'Full launch'}] }
+    { id:'d1', org:'Arden University', type:'Education', desc:'UK-based university — full product suite', stage:'Conversation', priority:'High', owner:'Sean Hobson', contact:'', nextStep:'Follow-up meeting', nextDate:'', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'', learners:2000, fyiLink:'', dealStructure:'Per-Student', dealValue:700000, activity:[{date:'2026-03-01',text:'Initial outreach sent'},{date:'2026-02-20',text:'Created opportunity'}] },
+    { id:'d2', org:'Compton College', type:'Education', desc:'Community college — full suite', stage:'Conversation', priority:'High', owner:'will.i.am', contact:'', nextStep:'Campus visit', nextDate:'', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'', learners:1500, fyiLink:'', dealStructure:'Per-Student', dealValue:525000, activity:[{date:'2026-03-02',text:'will.i.am intro call'},{date:'2026-02-15',text:'Created opportunity'}] },
+    { id:'d3', org:'AWS', type:'Technology', desc:'Platform infrastructure partnership', stage:'Conversation', priority:'High', owner:'Sean Hobson', contact:'', nextStep:'Technical alignment call', nextDate:'', products:['EDU.FYI'], notes:'', learners:0, fyiLink:'', dealStructure:'Institution', dealValue:500000, activity:[{date:'2026-02-28',text:'Intro meeting completed'}] },
+    { id:'d4', org:'NVIDIA', type:'Technology', desc:'AI compute & classroom tech', stage:'Active', priority:'High', owner:'Lee Chan', contact:'', nextStep:'Quarterly review', nextDate:'2026-04-01', products:['EDU.FYI','Agentic Classroom'], notes:'', learners:0, fyiLink:'', dealStructure:'Institution', dealValue:750000, activity:[{date:'2026-03-01',text:'Partnership active'},{date:'2026-02-01',text:'Agreement signed'}] },
+    { id:'d5', org:'LG', type:'Technology', desc:'Agentic Classroom hardware', stage:'Conversation', priority:'Medium', owner:'Sean Hobson', contact:'', nextStep:'Product demo', nextDate:'', products:['Agentic Classroom'], notes:'', learners:0, fyiLink:'', dealStructure:'Institution', dealValue:300000, activity:[{date:'2026-02-25',text:'Initial conversation'}] },
+    { id:'d6', org:'Qualcomm', type:'Technology', desc:'3-phase partnership: Edge AI curriculum + Snapdragon devices + Mobile/XR. Qualcomm provides hardware & AI certificate; EDU.FYI is the student platform. Key narrative: on-device AI making student agents faster, more private, more powerful.', stage:'Agreement', priority:'High', owner:'Lee Chan', contact:'Rodrigo Caruso Neves do Amaral', nextStep:'Alignment call to discuss counter-proposal & narrative framing', nextDate:'2026-03-15', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'Phase 1: AI curriculum + Qualcomm Certificate (current semester) — counter: certificate should connect to EDU.FYI agent work, not standalone Snapdragon course. Phase 2: Device program (next semester) — counter: consider AI glasses/tablets instead of laptops (students already have laptops), lead with student use cases not hardware. Phase 3: Mobile + XR (2027) — counter: ground in learning scenarios (exam prep agents on phone, immersive nursing/engineering). Key contacts: John Smee, Rodrigo Amaral, Vijay Shirsathe, Hemanth Sampath, Patrick Costello.', learners:5000, fyiLink:'', dealStructure:'Institution', dealValue:2000000, activity:[{date:'2026-03-05',text:'Counter-proposal sent by Lee Chan — reframe around student experience & EDU.FYI platform'},{date:'2026-02-12',text:'Qualcomm sent 3-phase brief (Rodrigo Amaral) — AI curriculum, Snapdragon laptops, Mobile/XR'},{date:'2026-03-03',text:'Moved to Agreement'},{date:'2026-02-10',text:'Proposal submitted'}] },
+    { id:'d7', org:'Oden College', type:'Education', desc:'EDU.FYI platform adoption', stage:'Conversation', priority:'Medium', owner:'Sean Hobson', contact:'', nextStep:'Initial pitch', nextDate:'', products:['EDU.FYI'], notes:'', learners:800, fyiLink:'', dealStructure:'Per-Student', dealValue:96000, activity:[{date:'2026-02-22',text:'Created opportunity'}] },
+    { id:'d8', org:'Arizona State University', type:'Education', desc:'Founding partner — full integration', stage:'Active', priority:'High', owner:'Sean Hobson', contact:'Michael Crow', nextStep:'Ongoing integration', nextDate:'', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'', learners:5000, fyiLink:'', dealStructure:'Institution', dealValue:3000000, activity:[{date:'2026-03-01',text:'Spring semester active'},{date:'2026-01-15',text:'Full launch'}] }
   ],
   comms: [
     { id:'c1', type:'Email', deal:'d1', people:'Sean Hobson', subject:'Arden initial outreach', direction:'Outbound', date:'2026-03-01', fyiLink:'', summary:'Sent intro email with EDU.FYI overview deck.', followup:'' },
@@ -775,8 +777,10 @@ function renderKanban() {
     sd.forEach(d => {
       const prods = d.products ? d.products.map(p => `<span class="product-tag">${p}</span>`).join('') : '';
       const ini = d.owner ? d.owner.split(' ').map(n=>n[0]).join('') : '?';
+      const dv = d.dealValue ? fmt(d.dealValue) : '';
+      const ds = d.dealStructure || '';
       html += `<div class="deal-card" draggable="true" data-id="${d.id}" ondragstart="onDragStart(event)" ondragend="onDragEnd(event)" onclick="openEditDeal('${d.id}')">
-        <div class="org">${d.org}</div><div class="desc">${d.desc||''}</div><div class="products">${prods}</div>
+        <div class="org">${d.org}</div>${dv?`<div style="font-size:16px;font-weight:700;color:var(--green);margin:2px 0">${dv}</div>`:''}${ds?`<div style="font-size:9px;color:var(--muted);margin-bottom:4px">${ds}</div>`:''}<div class="desc">${d.desc||''}</div><div class="products">${prods}</div>
         <div class="meta"><span class="priority ${d.priority.toLowerCase()}">${d.priority}</span><span style="color:var(--muted)">${d.type}</span></div>
         <div class="owner-badge"><span class="owner-avatar">${ini}</span>${d.owner||'Unassigned'}</div>
         ${d.nextStep?`<div style="margin-top:4px;font-size:10px;color:var(--muted)">Next: ${d.nextStep}</div>`:''}
@@ -805,12 +809,13 @@ function onDrop(e) {
 // TABLE
 function renderTable() {
   const deals = getFilteredDeals();
-  let html = '<thead><tr><th>Organization</th><th>Products</th><th>Stage</th><th>Priority</th><th>Owner</th><th>Learners</th><th>Next Step</th><th>Docs</th><th>FYI.AI</th></tr></thead><tbody>';
+  let html = '<thead><tr><th>Organization</th><th>Deal Value</th><th>Structure</th><th>Products</th><th>Stage</th><th>Priority</th><th>Owner</th><th>Learners</th><th>Next Step</th><th>Docs</th></tr></thead><tbody>';
   deals.forEach(d => {
     const prods = d.products ? d.products.map(p => `<span class="product-tag">${p}</span>`).join(' ') : '';
     const attCount = (d.attachments||[]).length;
     const attHtml = attCount ? `<span style="font-size:11px;color:var(--accent);font-weight:600">${attCount} doc${attCount>1?'s':''}</span>` : '—';
-    html += `<tr onclick="openEditDeal('${d.id}')" style="cursor:pointer"><td><strong>${d.org}</strong><br><span style="color:var(--muted);font-size:11px">${d.type}</span></td><td>${prods}</td><td><span class="stage-badge" style="background:${STAGE_COLORS[d.stage]}20;color:${STAGE_COLORS[d.stage]}">${STAGE_LABELS[d.stage]}</span></td><td><span class="priority ${d.priority.toLowerCase()}">${d.priority}</span></td><td>${d.owner||'—'}</td><td>${d.learners||'—'}</td><td>${d.nextStep||'—'}</td><td>${attHtml}</td><td>${d.fyiLink?`<a href="${d.fyiLink}" target="_blank" onclick="event.stopPropagation()" style="color:var(--purple);font-size:11px;font-weight:600">Open</a>`:'—'}</td></tr>`;
+    const dvHtml = d.dealValue ? `<strong style="color:var(--green)">${fmt(d.dealValue)}</strong>` : '—';
+    html += `<tr onclick="openEditDeal('${d.id}')" style="cursor:pointer"><td><strong>${d.org}</strong><br><span style="color:var(--muted);font-size:11px">${d.type}</span></td><td>${dvHtml}</td><td style="font-size:11px">${d.dealStructure||'—'}</td><td>${prods}</td><td><span class="stage-badge" style="background:${STAGE_COLORS[d.stage]}20;color:${STAGE_COLORS[d.stage]}">${STAGE_LABELS[d.stage]}</span></td><td><span class="priority ${d.priority.toLowerCase()}">${d.priority}</span></td><td>${d.owner||'—'}</td><td>${d.learners||'—'}</td><td>${d.nextStep||'—'}</td><td>${attHtml}</td></tr>`;
   });
   document.getElementById('deal-table').innerHTML = html + '</tbody>';
 }
@@ -899,10 +904,8 @@ function renderCharts() {
   const c3 = document.getElementById('chart-pipeline-rev');
   if (c3) {
     const revData = deals.map(d => {
-      let rpl = 0;
-      (d.products||[]).forEach(p => { if(PRODUCT_PRESETS[p]) rpl += PRODUCT_PRESETS[p].revPerLearner; });
-      if(!rpl) rpl = 150;
-      return { org: d.org, rev: (d.learners||0) * rpl * (STAGE_PROB[d.stage]||0) };
+      const dv = d.dealValue || 0;
+      return { org: d.org, rev: dv * (STAGE_PROB[d.stage]||0) };
     }).filter(r => r.rev > 0).sort((a,b) => b.rev - a.rev);
     chartPipelineRev = new Chart(c3, {type:'bar',data:{labels:revData.map(r=>r.org),datasets:[{data:revData.map(r=>r.rev),backgroundColor:'#3b82f6'}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{callback:v=>'$'+(v/1000).toFixed(0)+'k',font:{size:9}}},y:{ticks:{font:{size:9}}}},maintainAspectRatio:false}});
   }
@@ -911,58 +914,61 @@ function renderCharts() {
 // PROGRESS TO GOAL — Overall Economics & Success summary on main Pipeline page
 function renderProgressGoal() {
   const deals = DATA.deals;
-  // Overall portfolio metrics
-  let totalLearners = 0, totalWeightedRev = 0, totalActive = 0, totalProposalPlus = 0;
-  deals.forEach(d => {
-    const l = d.learners || 0;
-    let rpl = 0;
-    (d.products||[]).forEach(p => { if(PRODUCT_PRESETS[p]) rpl += PRODUCT_PRESETS[p].revPerLearner; });
-    if(!rpl) rpl = 150;
-    totalLearners += l;
-    totalWeightedRev += l * rpl * (STAGE_PROB[d.stage]||0);
-    if(d.stage === 'Active') totalActive++;
-    if(['Proposal','Agreement','Active'].includes(d.stage)) totalProposalPlus++;
-  });
-
-  // Active partnership revenue (100% probability)
+  // Use actual deal values for all calculations
+  let totalPipelineValue = 0, totalWeightedValue = 0, totalLearners = 0;
+  let totalActive = 0, totalProposalPlus = 0;
   let activeRev = 0, activeLearners = 0;
-  deals.filter(d => d.stage === 'Active').forEach(d => {
-    const l = d.learners||0; activeLearners += l;
-    let rpl = 0;
-    (d.products||[]).forEach(p => { if(PRODUCT_PRESETS[p]) rpl += PRODUCT_PRESETS[p].revPerLearner; });
-    if(!rpl) rpl = 150;
-    activeRev += l * rpl;
+  // Breakdown by structure type
+  const structureTotals = {};
+
+  deals.forEach(d => {
+    const dv = d.dealValue || 0;
+    const prob = STAGE_PROB[d.stage] || 0;
+    totalPipelineValue += dv;
+    totalWeightedValue += dv * prob;
+    totalLearners += d.learners || 0;
+    if (d.stage === 'Active') { totalActive++; activeRev += dv; activeLearners += d.learners || 0; }
+    if (['Proposal','Agreement','Active'].includes(d.stage)) totalProposalPlus++;
+    const st = d.dealStructure || 'Unset';
+    structureTotals[st] = (structureTotals[st] || 0) + dv;
   });
 
-  // Pipeline velocity — deals in proposal+ stage
-  const pipelineValue = totalWeightedRev;
-  const avgDealSize = deals.length > 0 ? Math.round(totalWeightedRev / deals.length) : 0;
+  // Run rate: active revenue annualized (already annual values)
+  const runRate = activeRev;
+  // Late-stage value (proposal + agreement, not yet active)
+  let lateStageValue = 0;
+  deals.filter(d => ['Proposal','Agreement'].includes(d.stage)).forEach(d => { lateStageValue += d.dealValue || 0; });
 
   const el = document.getElementById('progress-goal');
   if (!el) return;
+
+  // Structure breakdown chips
+  const structureChips = Object.entries(structureTotals).filter(([,v])=>v>0).map(([k,v])=>`<span style="display:inline-block;font-size:10px;background:#f1f5f9;padding:2px 8px;border-radius:4px;margin:1px">${k}: ${fmt(v)}</span>`).join(' ');
+
   el.innerHTML = `
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px">
       <div style="background:linear-gradient(135deg,#1e293b,#334155);color:white;border-radius:12px;padding:16px">
+        <div style="font-size:10px;text-transform:uppercase;opacity:0.7;letter-spacing:0.5px">Total Pipeline</div>
+        <div style="font-size:26px;font-weight:700;margin-top:2px">${fmt(totalPipelineValue)}</div>
+        <div style="font-size:11px;opacity:0.7">${deals.length} deals &bull; ${totalLearners.toLocaleString()} learners</div>
+      </div>
+      <div style="background:linear-gradient(135deg,#1e40af,#2563eb);color:white;border-radius:12px;padding:16px">
         <div style="font-size:10px;text-transform:uppercase;opacity:0.7;letter-spacing:0.5px">Weighted Pipeline</div>
-        <div style="font-size:28px;font-weight:700;margin-top:2px">${fmt(pipelineValue)}</div>
-        <div style="font-size:11px;opacity:0.7">${deals.length} deals &bull; ${totalLearners.toLocaleString()} total learners</div>
+        <div style="font-size:26px;font-weight:700;margin-top:2px">${fmt(totalWeightedValue)}</div>
+        <div style="font-size:11px;opacity:0.7">Probability-adjusted value</div>
       </div>
       <div style="background:linear-gradient(135deg,#166534,#15803d);color:white;border-radius:12px;padding:16px">
-        <div style="font-size:10px;text-transform:uppercase;opacity:0.7;letter-spacing:0.5px">Active Revenue</div>
-        <div style="font-size:28px;font-weight:700;margin-top:2px">${fmt(activeRev)}</div>
-        <div style="font-size:11px;opacity:0.7">${totalActive} active &bull; ${activeLearners.toLocaleString()} learners</div>
+        <div style="font-size:10px;text-transform:uppercase;opacity:0.7;letter-spacing:0.5px">Run Rate</div>
+        <div style="font-size:26px;font-weight:700;margin-top:2px">${fmt(runRate)}</div>
+        <div style="font-size:11px;opacity:0.7">${totalActive} active partner${totalActive!==1?'s':''} &bull; ${activeLearners.toLocaleString()} learners</div>
       </div>
       <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:16px">
         <div style="font-size:10px;text-transform:uppercase;color:var(--muted);letter-spacing:0.5px">Late-Stage Pipeline</div>
-        <div style="font-size:28px;font-weight:700;color:var(--accent);margin-top:2px">${totalProposalPlus} deals</div>
-        <div style="font-size:11px;color:var(--muted)">Proposal, Agreement, or Active</div>
+        <div style="font-size:26px;font-weight:700;color:var(--orange);margin-top:2px">${fmt(lateStageValue)}</div>
+        <div style="font-size:11px;color:var(--muted)">${totalProposalPlus - totalActive} deal${(totalProposalPlus-totalActive)!==1?'s':''} in Proposal/Agreement</div>
       </div>
-      <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:16px">
-        <div style="font-size:10px;text-transform:uppercase;color:var(--muted);letter-spacing:0.5px">Avg Deal Value (Weighted)</div>
-        <div style="font-size:28px;font-weight:700;color:var(--text);margin-top:2px">${fmt(avgDealSize)}</div>
-        <div style="font-size:11px;color:var(--muted)">Per opportunity</div>
-      </div>
-    </div>`;
+    </div>
+    <div style="margin-top:6px;padding:4px 0">${structureChips}</div>`;
 }
 
 // OWNER SELECTS
@@ -1020,9 +1026,9 @@ function populateVaultSelect() {
 }
 
 // DEAL MODAL
-function openAddDeal() { ['f-id','f-org','f-desc','f-contact','f-next','f-date','f-notes','f-learners','f-fyilink'].forEach(id=>document.getElementById(id).value=''); document.getElementById('f-type').value='Education'; document.getElementById('f-stage').value='Awareness'; document.getElementById('f-priority').value='High'; document.getElementById('f-owner').value=''; Array.from(document.getElementById('f-products').options).forEach(o=>o.selected=false); document.getElementById('btn-delete').style.display='none'; document.getElementById('modal-title').textContent='Add Opportunity'; _dealAttachments=[]; renderDealAttachments(); populateOwnerSelect(); populateVaultSelect(); document.getElementById('deal-modal').classList.add('show'); }
-function openEditDeal(id) { const d=DATA.deals.find(x=>x.id===id); if(!d) return; document.getElementById('modal-title').textContent='Edit: '+d.org; document.getElementById('f-id').value=d.id; document.getElementById('f-org').value=d.org; document.getElementById('f-type').value=d.type; document.getElementById('f-desc').value=d.desc||''; document.getElementById('f-stage').value=d.stage; document.getElementById('f-priority').value=d.priority; document.getElementById('f-contact').value=d.contact||''; document.getElementById('f-next').value=d.nextStep||''; document.getElementById('f-date').value=d.nextDate||''; document.getElementById('f-notes').value=d.notes||''; document.getElementById('f-learners').value=d.learners||''; document.getElementById('f-fyilink').value=d.fyiLink||''; populateOwnerSelect(); document.getElementById('f-owner').value=d.owner||''; Array.from(document.getElementById('f-products').options).forEach(o=>{o.selected=d.products&&d.products.includes(o.value);}); _dealAttachments=JSON.parse(JSON.stringify(d.attachments||[])); renderDealAttachments(); populateVaultSelect(); document.getElementById('btn-delete').style.display='block'; document.getElementById('deal-modal').classList.add('show'); }
-function saveDeal() { const id=document.getElementById('f-id').value; const products=Array.from(document.getElementById('f-products').selectedOptions).map(o=>o.value); const dd={org:document.getElementById('f-org').value,type:document.getElementById('f-type').value,desc:document.getElementById('f-desc').value,stage:document.getElementById('f-stage').value,priority:document.getElementById('f-priority').value,owner:document.getElementById('f-owner').value,contact:document.getElementById('f-contact').value,nextStep:document.getElementById('f-next').value,nextDate:document.getElementById('f-date').value,notes:document.getElementById('f-notes').value,learners:parseInt(document.getElementById('f-learners').value)||0,fyiLink:document.getElementById('f-fyilink').value,products,attachments:_dealAttachments}; if(id){const deal=DATA.deals.find(d=>d.id===id);Object.assign(deal,dd);deal.activity=deal.activity||[];deal.activity.unshift({date:new Date().toISOString().slice(0,10),text:'Updated deal details'});}else{dd.id='d'+Date.now();dd.activity=[{date:new Date().toISOString().slice(0,10),text:'Created opportunity'}];DATA.deals.push(dd);} saveData(); closeModal('deal-modal'); render(); }
+function openAddDeal() { ['f-id','f-org','f-desc','f-contact','f-next','f-date','f-notes','f-learners','f-fyilink','f-deal-value'].forEach(id=>document.getElementById(id).value=''); document.getElementById('f-type').value='Education'; document.getElementById('f-stage').value='Awareness'; document.getElementById('f-priority').value='High'; document.getElementById('f-owner').value=''; document.getElementById('f-deal-structure').value='Per-Student'; Array.from(document.getElementById('f-products').options).forEach(o=>o.selected=false); document.getElementById('btn-delete').style.display='none'; document.getElementById('modal-title').textContent='Add Opportunity'; _dealAttachments=[]; renderDealAttachments(); populateOwnerSelect(); populateVaultSelect(); document.getElementById('deal-modal').classList.add('show'); }
+function openEditDeal(id) { const d=DATA.deals.find(x=>x.id===id); if(!d) return; document.getElementById('modal-title').textContent='Edit: '+d.org; document.getElementById('f-id').value=d.id; document.getElementById('f-org').value=d.org; document.getElementById('f-type').value=d.type; document.getElementById('f-desc').value=d.desc||''; document.getElementById('f-stage').value=d.stage; document.getElementById('f-priority').value=d.priority; document.getElementById('f-contact').value=d.contact||''; document.getElementById('f-next').value=d.nextStep||''; document.getElementById('f-date').value=d.nextDate||''; document.getElementById('f-notes').value=d.notes||''; document.getElementById('f-learners').value=d.learners||''; document.getElementById('f-fyilink').value=d.fyiLink||''; document.getElementById('f-deal-structure').value=d.dealStructure||'Per-Student'; document.getElementById('f-deal-value').value=d.dealValue||''; populateOwnerSelect(); document.getElementById('f-owner').value=d.owner||''; Array.from(document.getElementById('f-products').options).forEach(o=>{o.selected=d.products&&d.products.includes(o.value);}); _dealAttachments=JSON.parse(JSON.stringify(d.attachments||[])); renderDealAttachments(); populateVaultSelect(); document.getElementById('btn-delete').style.display='block'; document.getElementById('deal-modal').classList.add('show'); }
+function saveDeal() { const id=document.getElementById('f-id').value; const products=Array.from(document.getElementById('f-products').selectedOptions).map(o=>o.value); const dd={org:document.getElementById('f-org').value,type:document.getElementById('f-type').value,desc:document.getElementById('f-desc').value,stage:document.getElementById('f-stage').value,priority:document.getElementById('f-priority').value,owner:document.getElementById('f-owner').value,contact:document.getElementById('f-contact').value,nextStep:document.getElementById('f-next').value,nextDate:document.getElementById('f-date').value,notes:document.getElementById('f-notes').value,learners:parseInt(document.getElementById('f-learners').value)||0,fyiLink:document.getElementById('f-fyilink').value,dealStructure:document.getElementById('f-deal-structure').value,dealValue:parseFloat(document.getElementById('f-deal-value').value)||0,products,attachments:_dealAttachments}; if(id){const deal=DATA.deals.find(d=>d.id===id);Object.assign(deal,dd);deal.activity=deal.activity||[];deal.activity.unshift({date:new Date().toISOString().slice(0,10),text:'Updated deal details'});}else{dd.id='d'+Date.now();dd.activity=[{date:new Date().toISOString().slice(0,10),text:'Created opportunity'}];DATA.deals.push(dd);} saveData(); closeModal('deal-modal'); render(); }
 function deleteDeal() { const id=document.getElementById('f-id').value; if(id&&confirm('Remove this opportunity?')){DATA.deals=DATA.deals.filter(d=>d.id!==id);saveData();closeModal('deal-modal');render();} }
 
 // PERSON MODAL
@@ -1107,16 +1113,19 @@ function renderForecast() {
   deals.forEach(d => {
     const prob = STAGE_PROB[d.stage]||0;
     const l = d.learners||0;
-    // Use rough per-learner rev estimate based on products
-    let rpl = 0;
-    (d.products||[]).forEach(p => { if(PRODUCT_PRESETS[p]) rpl += PRODUCT_PRESETS[p].revPerLearner; });
-    if(!rpl) rpl = 150;
-    const annualRev = l * rpl;
+    // Use deal value if set, otherwise fall back to learner estimate
+    let annualRev = d.dealValue || 0;
+    if (!annualRev && l > 0) {
+      let rpl = 0;
+      (d.products||[]).forEach(p => { if(PRODUCT_PRESETS[p]) rpl += PRODUCT_PRESETS[p].revPerLearner; });
+      if(!rpl) rpl = 150;
+      annualRev = l * rpl;
+    }
     const weighted = annualRev * prob;
     worst += annualRev * Math.max(0, prob - 0.15);
     likely += weighted;
     best += annualRev * Math.min(1, prob + 0.15);
-    rows.push({ org:d.org, stage:d.stage, learners:l, rpl, annualRev, prob, weighted });
+    rows.push({ org:d.org, stage:d.stage, structure:d.dealStructure||'—', learners:l, annualRev, prob, weighted });
   });
   document.getElementById('forecast-summary').innerHTML = `
     <div class="forecast-card worst"><div class="fc-label">Conservative</div><div class="fc-value">${fmt(worst)}</div></div>
@@ -1127,8 +1136,8 @@ function renderForecast() {
   const ctx = document.getElementById('chart-forecast');
   if(ctx) forecastChart = new Chart(ctx, {type:'bar',data:{labels:rows.map(r=>r.org),datasets:[{label:'Weighted Revenue',data:rows.map(r=>r.weighted),backgroundColor:rows.map(r=>STAGE_COLORS[r.stage])},{label:'Full Potential',data:rows.map(r=>r.annualRev),backgroundColor:'rgba(148,163,184,0.3)'}]},options:{plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,ticks:{callback:v=>'$'+v.toLocaleString()}}}}});
   // Table
-  let h = '<thead><tr><th>Partner</th><th>Stage</th><th>Probability</th><th>Learners</th><th>Rev/Learner</th><th>Annual (Full)</th><th>Weighted</th></tr></thead><tbody>';
-  rows.forEach(r => { h += `<tr><td><strong>${r.org}</strong></td><td><span class="stage-badge" style="background:${STAGE_COLORS[r.stage]}20;color:${STAGE_COLORS[r.stage]}">${STAGE_LABELS[r.stage]}</span></td><td>${(r.prob*100).toFixed(0)}%</td><td>${r.learners.toLocaleString()}</td><td>${fmt(r.rpl)}</td><td>${fmt(r.annualRev)}</td><td style="font-weight:700">${fmt(r.weighted)}</td></tr>`; });
+  let h = '<thead><tr><th>Partner</th><th>Structure</th><th>Stage</th><th>Probability</th><th>Learners</th><th>Deal Value</th><th>Weighted</th></tr></thead><tbody>';
+  rows.forEach(r => { h += `<tr><td><strong>${r.org}</strong></td><td style="font-size:11px">${r.structure}</td><td><span class="stage-badge" style="background:${STAGE_COLORS[r.stage]}20;color:${STAGE_COLORS[r.stage]}">${STAGE_LABELS[r.stage]}</span></td><td>${(r.prob*100).toFixed(0)}%</td><td>${r.learners.toLocaleString()}</td><td>${fmt(r.annualRev)}</td><td style="font-weight:700">${fmt(r.weighted)}</td></tr>`; });
   h += `<tr style="font-weight:700;background:#f8fafc"><td colspan="6">Total Weighted Forecast</td><td>${fmt(likely)}</td></tr></tbody>`;
   document.getElementById('forecast-table').innerHTML = h;
 }

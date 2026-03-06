@@ -19,6 +19,8 @@ CREATE TABLE IF NOT EXISTS deals (
   notes TEXT DEFAULT '',
   learners INTEGER DEFAULT 0,
   fyi_link TEXT DEFAULT '',
+  deal_structure TEXT DEFAULT 'Per-Student',
+  deal_value NUMERIC DEFAULT 0,
   activity JSONB DEFAULT '[]'::jsonb,
   attachments JSONB DEFAULT '[]'::jsonb,
   created_at TIMESTAMPTZ DEFAULT now(),
