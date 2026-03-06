@@ -257,7 +257,7 @@ tr:hover { background: #f8fafc; }
   </div>
 
   <!-- TABLE -->
-  <div class="tab-content" id="tab-table"><table id="deal-table"></table></div>
+  <div class="tab-content" id="tab-table"><div style="overflow-x:auto;-webkit-overflow-scrolling:touch"><table id="deal-table" style="min-width:900px"></table></div></div>
 
   <!-- TASKS -->
   <div class="tab-content" id="tab-tasks">
@@ -331,7 +331,7 @@ tr:hover { background: #f8fafc; }
     <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Weighted by pipeline stage probability</p>
     <div class="forecast-summary" id="forecast-summary"></div>
     <div class="chart-card"><h3>Forecast by Partner</h3><canvas id="chart-forecast" height="250"></canvas></div>
-    <div style="margin-top:16px"><table id="forecast-table"></table></div>
+    <div style="margin-top:16px;overflow-x:auto;-webkit-overflow-scrolling:touch"><table id="forecast-table" style="min-width:700px"></table></div>
   </div>
 
   <!-- MEETING PREP -->
@@ -546,7 +546,7 @@ let AUTH_TOKEN = sessionStorage.getItem('edufyi_token') || localStorage.getItem(
 const API_BASE = ''; // Same origin — Vercel serves both
 
 // Data version — bump this whenever defaults are updated so stale localStorage is replaced
-const DATA_VERSION = 5;
+const DATA_VERSION = 6;
 
 const DEFAULT_DATA = {
   deals: [
@@ -650,6 +650,18 @@ async function loadDataFromBackend() {
       const remote = await res.json();
       // Only override if remote has data
       if (remote.deals && remote.deals.length > 0) {
+        // Merge: fill in any missing new fields from defaults so Supabase gaps don't zero-out values
+        if (remote.deals) {
+          remote.deals.forEach(d => {
+            const def = DEFAULT_DATA.deals.find(dd => dd.id === d.id);
+            if (def) {
+              if (d.dealValue === undefined || d.dealValue === null) d.dealValue = def.dealValue || 0;
+              if (!d.dealStructure) d.dealStructure = def.dealStructure || 'Per-Student';
+              if (!d.attachments) d.attachments = def.attachments || [];
+              if (!d.activity) d.activity = def.activity || [];
+            }
+          });
+        }
         DATA = remote;
         localStorage.setItem('edufyi_data', JSON.stringify(DATA));
       }
@@ -707,11 +719,10 @@ if (authStore.getItem('edufyi_auth') === '1') {
   AUTH_TOKEN = authStore.getItem('edufyi_token') || '';
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('main-app').style.display = 'block';
-  // Try to refresh from backend
+  // Render immediately with local data, then refresh from backend
+  setTimeout(render, 50);
   if (AUTH_TOKEN) {
     loadDataFromBackend().then(() => render());
-  } else {
-    setTimeout(render, 50);
   }
 }
 
@@ -809,13 +820,13 @@ function onDrop(e) {
 // TABLE
 function renderTable() {
   const deals = getFilteredDeals();
-  let html = '<thead><tr><th>Organization</th><th>Deal Value</th><th>Structure</th><th>Products</th><th>Stage</th><th>Priority</th><th>Owner</th><th>Learners</th><th>Next Step</th><th>Docs</th></tr></thead><tbody>';
+  let html = '<thead><tr><th style="min-width:130px">Organization</th><th style="min-width:90px">Value</th><th>Structure</th><th>Products</th><th>Stage</th><th>Priority</th><th>Owner</th><th style="text-align:right">Learners</th><th>Next Step</th><th style="width:50px">Docs</th></tr></thead><tbody>';
   deals.forEach(d => {
     const prods = d.products ? d.products.map(p => `<span class="product-tag">${p}</span>`).join(' ') : '';
     const attCount = (d.attachments||[]).length;
-    const attHtml = attCount ? `<span style="font-size:11px;color:var(--accent);font-weight:600">${attCount} doc${attCount>1?'s':''}</span>` : '—';
+    const attHtml = attCount ? `<span style="font-size:11px;color:var(--accent);font-weight:600">${attCount}</span>` : '—';
     const dvHtml = d.dealValue ? `<strong style="color:var(--green)">${fmt(d.dealValue)}</strong>` : '—';
-    html += `<tr onclick="openEditDeal('${d.id}')" style="cursor:pointer"><td><strong>${d.org}</strong><br><span style="color:var(--muted);font-size:11px">${d.type}</span></td><td>${dvHtml}</td><td style="font-size:11px">${d.dealStructure||'—'}</td><td>${prods}</td><td><span class="stage-badge" style="background:${STAGE_COLORS[d.stage]}20;color:${STAGE_COLORS[d.stage]}">${STAGE_LABELS[d.stage]}</span></td><td><span class="priority ${d.priority.toLowerCase()}">${d.priority}</span></td><td>${d.owner||'—'}</td><td>${d.learners||'—'}</td><td>${d.nextStep||'—'}</td><td>${attHtml}</td></tr>`;
+    html += `<tr onclick="openEditDeal('${d.id}')" style="cursor:pointer"><td><strong>${d.org}</strong><br><span style="color:var(--muted);font-size:11px">${d.type}</span></td><td style="white-space:nowrap">${dvHtml}</td><td style="font-size:11px;white-space:nowrap">${d.dealStructure||'—'}</td><td>${prods}</td><td><span class="stage-badge" style="background:${STAGE_COLORS[d.stage]}20;color:${STAGE_COLORS[d.stage]}">${STAGE_LABELS[d.stage]}</span></td><td><span class="priority ${d.priority.toLowerCase()}">${d.priority}</span></td><td style="white-space:nowrap">${d.owner||'—'}</td><td style="text-align:right">${d.learners||'—'}</td><td style="font-size:12px">${d.nextStep||'—'}</td><td style="text-align:center">${attHtml}</td></tr>`;
   });
   document.getElementById('deal-table').innerHTML = html + '</tbody>';
 }
