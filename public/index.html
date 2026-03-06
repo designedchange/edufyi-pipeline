@@ -277,7 +277,18 @@ tr:hover { background: #f8fafc; }
 
   <!-- PEOPLE -->
   <div class="tab-content" id="tab-people">
-    <button class="add-btn" onclick="openAddPerson()" style="margin-bottom:14px">+ Add Person</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <button class="add-btn" onclick="openAddPerson()">+ Add Person</button>
+      <div class="filters" style="margin-bottom:0">
+        <select id="people-org-filter" onchange="renderPeople()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px"><option value="">All Organizations</option></select>
+        <select id="people-sort" onchange="renderPeople()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+          <option value="name">Sort: Name</option>
+          <option value="org">Sort: Organization</option>
+          <option value="deals">Sort: Most Deals</option>
+          <option value="tasks">Sort: Most Tasks</option>
+        </select>
+      </div>
+    </div>
     <div class="grid-cards" id="people-grid"></div>
   </div>
 
@@ -890,18 +901,55 @@ function renderTimeline() {
 }
 
 // PEOPLE
+function populatePeopleOrgFilter() {
+  const orgs = [...new Set(DATA.people.map(p => p.org).filter(Boolean))].sort();
+  const s = document.getElementById('people-org-filter');
+  const v = s.value;
+  s.innerHTML = '<option value="">All Organizations</option>' + orgs.map(o => `<option value="${o}">${o}</option>`).join('');
+  s.value = v;
+}
+
 function renderPeople() {
+  populatePeopleOrgFilter();
+  const orgFilter = document.getElementById('people-org-filter').value;
+  const sortBy = document.getElementById('people-sort').value;
+
+  // Build enriched list
+  let people = DATA.people.map(p => ({
+    ...p,
+    _deals: DATA.deals.filter(d => d.owner === p.name || d.contact === p.name || d.sponsor === p.name),
+    _tasks: (DATA.tasks||[]).filter(t => t.owner === p.name && t.status !== 'Done')
+  }));
+
+  // Filter by org
+  if (orgFilter) people = people.filter(p => p.org === orgFilter);
+
+  // Sort
+  if (sortBy === 'org') people.sort((a,b) => (a.org||'').localeCompare(b.org||'') || a.name.localeCompare(b.name));
+  else if (sortBy === 'deals') people.sort((a,b) => b._deals.length - a._deals.length || a.name.localeCompare(b.name));
+  else if (sortBy === 'tasks') people.sort((a,b) => b._tasks.length - a._tasks.length || a.name.localeCompare(b.name));
+  else people.sort((a,b) => a.name.localeCompare(b.name));
+
+  // Group header tracking for org sort
+  const showOrgHeaders = sortBy === 'org';
+  let lastOrg = null;
   let html = '';
-  DATA.people.forEach(p => {
-    const assigned = DATA.deals.filter(d => d.owner === p.name);
-    const tasks = (DATA.tasks||[]).filter(t => t.owner === p.name && t.status !== 'Done');
+
+  people.forEach(p => {
+    if (showOrgHeaders && !orgFilter && p.org !== lastOrg) {
+      lastOrg = p.org;
+      html += `<div style="grid-column:1/-1;font-size:13px;font-weight:700;color:var(--text);padding:10px 0 2px;border-bottom:2px solid var(--accent);margin-top:${html?'12px':'0'}">${p.org || 'No Organization'}</div>`;
+    }
+    const assigned = p._deals;
+    const tasks = p._tasks;
     html += `<div class="card" onclick="openEditPerson('${p.id}')"><div class="name">${p.name}</div><div class="sub">${p.role||''} &bull; ${p.org||''}</div>
       ${p.email?`<div style="font-size:12px;color:var(--accent);margin-top:6px">${p.email}</div>`:''}
+      ${p.phone?`<div style="font-size:12px;color:var(--muted);margin-top:2px">${p.phone}</div>`:''}
       ${assigned.length?`<div style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px"><div style="font-size:10px;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Deals (${assigned.length})</div>${assigned.map(d=>`<span class="deal-pill">${d.org}</span>`).join('')}</div>`:''}
       ${tasks.length?`<div style="margin-top:6px"><div style="font-size:10px;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Open Tasks (${tasks.length})</div>${tasks.slice(0,3).map(t=>`<div style="font-size:11px;color:var(--text)">&bull; ${t.title}</div>`).join('')}</div>`:''}
     </div>`;
   });
-  document.getElementById('people-grid').innerHTML = html;
+  document.getElementById('people-grid').innerHTML = html || '<p style="color:var(--muted);font-size:13px">No people match filters.</p>';
 }
 
 // ASSETS / DOC VAULT
