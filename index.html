@@ -75,14 +75,14 @@ header .subtitle { color: var(--muted); font-size: 13px; }
 .card .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
 .deal-pill { display: inline-block; font-size: 10px; background: var(--accent-light); color: var(--accent); padding: 2px 7px; border-radius: 4px; margin: 2px; }
 table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
-th { background: #f8fafc; padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); }
-td { padding: 10px 14px; font-size: 13px; border-bottom: 1px solid var(--border); }
+th { background: #f8fafc; padding: 8px 10px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); white-space: nowrap; }
+td { padding: 8px 10px; font-size: 13px; border-bottom: 1px solid var(--border); }
 tr:hover { background: #f8fafc; }
 .stage-badge { padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
 .filters { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
 .filters select { padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 12px; }
 .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
-.chart-card { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+.chart-card { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 16px; max-height: 220px; overflow: hidden; }
 .chart-card h3 { font-size: 13px; margin-bottom: 10px; }
 
 /* Modal */
@@ -250,9 +250,9 @@ tr:hover { background: #f8fafc; }
     <!-- Progress to Goal -->
     <div id="progress-goal" style="margin-top:16px"></div>
     <div class="charts-row" style="grid-template-columns:1fr 1fr 1fr;margin-top:12px">
-      <div class="chart-card" style="padding:12px"><h3 style="font-size:12px;margin-bottom:6px">By Type</h3><canvas id="chart-type" height="140"></canvas></div>
-      <div class="chart-card" style="padding:12px"><h3 style="font-size:12px;margin-bottom:6px">By Stage</h3><canvas id="chart-stage" height="140"></canvas></div>
-      <div class="chart-card" style="padding:12px"><h3 style="font-size:12px;margin-bottom:6px">Revenue Forecast</h3><canvas id="chart-pipeline-rev" height="140"></canvas></div>
+      <div class="chart-card" style="padding:12px;max-height:200px"><h3 style="font-size:12px;margin-bottom:6px">By Type</h3><div style="height:150px;position:relative"><canvas id="chart-type"></canvas></div></div>
+      <div class="chart-card" style="padding:12px;max-height:200px"><h3 style="font-size:12px;margin-bottom:6px">By Stage</h3><div style="height:150px;position:relative"><canvas id="chart-stage"></canvas></div></div>
+      <div class="chart-card" style="padding:12px;max-height:200px"><h3 style="font-size:12px;margin-bottom:6px">Revenue Forecast</h3><div style="height:150px;position:relative"><canvas id="chart-pipeline-rev"></canvas></div></div>
     </div>
   </div>
 
@@ -403,7 +403,8 @@ tr:hover { background: #f8fafc; }
   <label>Priority</label><select id="f-priority"><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select>
   <label>Products</label><select id="f-products" multiple><option value="EDU.FYI">EDU.FYI</option><option value="Agentic Self">Agentic Self</option><option value="Agentic Classroom">Agentic Classroom</option></select>
   <label>Owner</label><select id="f-owner"><option value="">Unassigned</option></select>
-  <label>Contact</label><input id="f-contact">
+  <label>Contact</label><input id="f-contact" placeholder="Day-to-day contact">
+  <label>Executive Sponsor</label><input id="f-sponsor" placeholder="Decision-maker / budget holder">
   <label>Next Step</label><input id="f-next">
   <label>Next Date</label><input type="date" id="f-date">
   <label>Deal Structure</label><select id="f-deal-structure"><option value="Per-Student">Per-Student</option><option value="Institution">Institution (Flat Fee)</option><option value="Philanthropy">Philanthropy / Grant</option><option value="Investment">Investment</option></select>
@@ -546,18 +547,18 @@ let AUTH_TOKEN = sessionStorage.getItem('edufyi_token') || localStorage.getItem(
 const API_BASE = ''; // Same origin — Vercel serves both
 
 // Data version — bump this whenever defaults are updated so stale localStorage is replaced
-const DATA_VERSION = 6;
+const DATA_VERSION = 7;
 
 const DEFAULT_DATA = {
   deals: [
-    { id:'d1', org:'Arden University', type:'Education', desc:'UK-based university — full product suite', stage:'Conversation', priority:'High', owner:'Sean Hobson', contact:'', nextStep:'Follow-up meeting', nextDate:'', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'', learners:2000, fyiLink:'', dealStructure:'Per-Student', dealValue:700000, activity:[{date:'2026-03-01',text:'Initial outreach sent'},{date:'2026-02-20',text:'Created opportunity'}] },
-    { id:'d2', org:'Compton College', type:'Education', desc:'Community college — full suite', stage:'Conversation', priority:'High', owner:'will.i.am', contact:'', nextStep:'Campus visit', nextDate:'', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'', learners:1500, fyiLink:'', dealStructure:'Per-Student', dealValue:525000, activity:[{date:'2026-03-02',text:'will.i.am intro call'},{date:'2026-02-15',text:'Created opportunity'}] },
-    { id:'d3', org:'AWS', type:'Technology', desc:'Platform infrastructure partnership', stage:'Conversation', priority:'High', owner:'Sean Hobson', contact:'', nextStep:'Technical alignment call', nextDate:'', products:['EDU.FYI'], notes:'', learners:0, fyiLink:'', dealStructure:'Institution', dealValue:500000, activity:[{date:'2026-02-28',text:'Intro meeting completed'}] },
-    { id:'d4', org:'NVIDIA', type:'Technology', desc:'AI compute & classroom tech', stage:'Active', priority:'High', owner:'Lee Chan', contact:'', nextStep:'Quarterly review', nextDate:'2026-04-01', products:['EDU.FYI','Agentic Classroom'], notes:'', learners:0, fyiLink:'', dealStructure:'Institution', dealValue:750000, activity:[{date:'2026-03-01',text:'Partnership active'},{date:'2026-02-01',text:'Agreement signed'}] },
-    { id:'d5', org:'LG', type:'Technology', desc:'Agentic Classroom hardware', stage:'Conversation', priority:'Medium', owner:'Sean Hobson', contact:'', nextStep:'Product demo', nextDate:'', products:['Agentic Classroom'], notes:'', learners:0, fyiLink:'', dealStructure:'Institution', dealValue:300000, activity:[{date:'2026-02-25',text:'Initial conversation'}] },
-    { id:'d6', org:'Qualcomm', type:'Technology', desc:'3-phase partnership: Edge AI curriculum + Snapdragon devices + Mobile/XR. Qualcomm provides hardware & AI certificate; EDU.FYI is the student platform. Key narrative: on-device AI making student agents faster, more private, more powerful.', stage:'Agreement', priority:'High', owner:'Lee Chan', contact:'Rodrigo Caruso Neves do Amaral', nextStep:'Alignment call to discuss counter-proposal & narrative framing', nextDate:'2026-03-15', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'Phase 1: AI curriculum + Qualcomm Certificate (current semester) — counter: certificate should connect to EDU.FYI agent work, not standalone Snapdragon course. Phase 2: Device program (next semester) — counter: consider AI glasses/tablets instead of laptops (students already have laptops), lead with student use cases not hardware. Phase 3: Mobile + XR (2027) — counter: ground in learning scenarios (exam prep agents on phone, immersive nursing/engineering). Key contacts: John Smee, Rodrigo Amaral, Vijay Shirsathe, Hemanth Sampath, Patrick Costello.', learners:5000, fyiLink:'', dealStructure:'Institution', dealValue:2000000, activity:[{date:'2026-03-05',text:'Counter-proposal sent by Lee Chan — reframe around student experience & EDU.FYI platform'},{date:'2026-02-12',text:'Qualcomm sent 3-phase brief (Rodrigo Amaral) — AI curriculum, Snapdragon laptops, Mobile/XR'},{date:'2026-03-03',text:'Moved to Agreement'},{date:'2026-02-10',text:'Proposal submitted'}] },
-    { id:'d7', org:'Oden College', type:'Education', desc:'EDU.FYI platform adoption', stage:'Conversation', priority:'Medium', owner:'Sean Hobson', contact:'', nextStep:'Initial pitch', nextDate:'', products:['EDU.FYI'], notes:'', learners:800, fyiLink:'', dealStructure:'Per-Student', dealValue:96000, activity:[{date:'2026-02-22',text:'Created opportunity'}] },
-    { id:'d8', org:'Arizona State University', type:'Education', desc:'Founding partner — full integration', stage:'Active', priority:'High', owner:'Sean Hobson', contact:'Michael Crow', nextStep:'Ongoing integration', nextDate:'', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'', learners:5000, fyiLink:'', dealStructure:'Institution', dealValue:3000000, activity:[{date:'2026-03-01',text:'Spring semester active'},{date:'2026-01-15',text:'Full launch'}] }
+    { id:'d1', org:'Arden University', type:'Education', desc:'UK-based university — full product suite', stage:'Conversation', priority:'High', owner:'Sean Hobson', contact:'', sponsor:'', nextStep:'Follow-up meeting', nextDate:'', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'', learners:2000, fyiLink:'', dealStructure:'Per-Student', dealValue:700000, activity:[{date:'2026-03-01',text:'Initial outreach sent'},{date:'2026-02-20',text:'Created opportunity'}] },
+    { id:'d2', org:'Compton College', type:'Education', desc:'Community college — full suite', stage:'Conversation', priority:'High', owner:'will.i.am', contact:'', sponsor:'', nextStep:'Campus visit', nextDate:'', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'', learners:1500, fyiLink:'', dealStructure:'Per-Student', dealValue:525000, activity:[{date:'2026-03-02',text:'will.i.am intro call'},{date:'2026-02-15',text:'Created opportunity'}] },
+    { id:'d3', org:'AWS', type:'Technology', desc:'Platform infrastructure partnership', stage:'Conversation', priority:'High', owner:'Sean Hobson', contact:'', sponsor:'', nextStep:'Technical alignment call', nextDate:'', products:['EDU.FYI'], notes:'', learners:0, fyiLink:'', dealStructure:'Institution', dealValue:500000, activity:[{date:'2026-02-28',text:'Intro meeting completed'}] },
+    { id:'d4', org:'NVIDIA', type:'Technology', desc:'AI compute & classroom tech', stage:'Active', priority:'High', owner:'Lee Chan', contact:'', sponsor:'', nextStep:'Quarterly review', nextDate:'2026-04-01', products:['EDU.FYI','Agentic Classroom'], notes:'', learners:0, fyiLink:'', dealStructure:'Institution', dealValue:750000, activity:[{date:'2026-03-01',text:'Partnership active'},{date:'2026-02-01',text:'Agreement signed'}] },
+    { id:'d5', org:'LG', type:'Technology', desc:'Agentic Classroom hardware', stage:'Conversation', priority:'Medium', owner:'Sean Hobson', contact:'', sponsor:'', nextStep:'Product demo', nextDate:'', products:['Agentic Classroom'], notes:'', learners:0, fyiLink:'', dealStructure:'Institution', dealValue:300000, activity:[{date:'2026-02-25',text:'Initial conversation'}] },
+    { id:'d6', org:'Qualcomm', type:'Technology', desc:'3-phase partnership: Edge AI curriculum + Snapdragon devices + Mobile/XR. Qualcomm provides hardware & AI certificate; EDU.FYI is the student platform. Key narrative: on-device AI making student agents faster, more private, more powerful.', stage:'Agreement', priority:'High', owner:'Lee Chan', contact:'Rodrigo Caruso Neves do Amaral', sponsor:'John Smee', nextStep:'Alignment call to discuss counter-proposal & narrative framing', nextDate:'2026-03-15', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'Phase 1: AI curriculum + Qualcomm Certificate (current semester) — counter: certificate should connect to EDU.FYI agent work, not standalone Snapdragon course. Phase 2: Device program (next semester) — counter: consider AI glasses/tablets instead of laptops (students already have laptops), lead with student use cases not hardware. Phase 3: Mobile + XR (2027) — counter: ground in learning scenarios (exam prep agents on phone, immersive nursing/engineering). Key contacts: John Smee, Rodrigo Amaral, Vijay Shirsathe, Hemanth Sampath, Patrick Costello.', learners:5000, fyiLink:'', dealStructure:'Institution', dealValue:2000000, activity:[{date:'2026-03-05',text:'Counter-proposal sent by Lee Chan — reframe around student experience & EDU.FYI platform'},{date:'2026-02-12',text:'Qualcomm sent 3-phase brief (Rodrigo Amaral) — AI curriculum, Snapdragon laptops, Mobile/XR'},{date:'2026-03-03',text:'Moved to Agreement'},{date:'2026-02-10',text:'Proposal submitted'}] },
+    { id:'d7', org:'Oden College', type:'Education', desc:'EDU.FYI platform adoption', stage:'Conversation', priority:'Medium', owner:'Sean Hobson', contact:'', sponsor:'', nextStep:'Initial pitch', nextDate:'', products:['EDU.FYI'], notes:'', learners:800, fyiLink:'', dealStructure:'Per-Student', dealValue:96000, activity:[{date:'2026-02-22',text:'Created opportunity'}] },
+    { id:'d8', org:'Arizona State University', type:'Education', desc:'Founding partner — full integration', stage:'Active', priority:'High', owner:'Sean Hobson', contact:'', sponsor:'Michael Crow', nextStep:'Ongoing integration', nextDate:'', products:['EDU.FYI','Agentic Self','Agentic Classroom'], notes:'', learners:5000, fyiLink:'', dealStructure:'Institution', dealValue:3000000, activity:[{date:'2026-03-01',text:'Spring semester active'},{date:'2026-01-15',text:'Full launch'}] }
   ],
   comms: [
     { id:'c1', type:'Email', deal:'d1', people:'Sean Hobson', subject:'Arden initial outreach', direction:'Outbound', date:'2026-03-01', fyiLink:'', summary:'Sent intro email with EDU.FYI overview deck.', followup:'' },
@@ -619,6 +620,23 @@ if (cachedVersion >= DATA_VERSION) {
   localStorage.setItem('edufyi_data_version', String(DATA_VERSION));
 }
 
+// Ensure every deal has new fields populated — fills from defaults if missing
+function repairDealFields() {
+  (DATA.deals || []).forEach(d => {
+    const def = DEFAULT_DATA.deals.find(dd => dd.id === d.id);
+    if (def) {
+      if (!d.dealValue && def.dealValue) d.dealValue = def.dealValue;
+      if (!d.dealStructure && def.dealStructure) d.dealStructure = def.dealStructure;
+      if (!d.attachments && def.attachments) d.attachments = def.attachments;
+    }
+    // Ensure stage is valid (repair old Awareness/Alignment stages)
+    if (!STAGES.includes(d.stage)) {
+      if (d.stage === 'Awareness' || d.stage === 'Alignment') d.stage = 'Conversation';
+    }
+  });
+}
+repairDealFields();
+
 function resetToDefaults() {
   if (!confirm('Reset all data to the latest built-in defaults? Any manual edits you\'ve made in the browser will be lost.')) return;
   DATA = JSON.parse(JSON.stringify(DEFAULT_DATA));
@@ -663,6 +681,7 @@ async function loadDataFromBackend() {
           });
         }
         DATA = remote;
+        repairDealFields();
         localStorage.setItem('edufyi_data', JSON.stringify(DATA));
       }
     }
@@ -794,6 +813,8 @@ function renderKanban() {
         <div class="org">${d.org}</div>${dv?`<div style="font-size:16px;font-weight:700;color:var(--green);margin:2px 0">${dv}</div>`:''}${ds?`<div style="font-size:9px;color:var(--muted);margin-bottom:4px">${ds}</div>`:''}<div class="desc">${d.desc||''}</div><div class="products">${prods}</div>
         <div class="meta"><span class="priority ${d.priority.toLowerCase()}">${d.priority}</span><span style="color:var(--muted)">${d.type}</span></div>
         <div class="owner-badge"><span class="owner-avatar">${ini}</span>${d.owner||'Unassigned'}</div>
+        ${d.sponsor?`<div style="font-size:10px;color:var(--purple);margin-top:2px">&#9733; ${d.sponsor}</div>`:''}
+        ${d.contact?`<div style="font-size:10px;color:var(--muted);margin-top:1px">Contact: ${d.contact}</div>`:''}
         ${d.nextStep?`<div style="margin-top:4px;font-size:10px;color:var(--muted)">Next: ${d.nextStep}</div>`:''}
         ${d.fyiLink?`<div style="margin-top:4px"><a href="${d.fyiLink}" target="_blank" onclick="event.stopPropagation()" style="font-size:10px;color:var(--purple);font-weight:600;text-decoration:none">FYI.AI Project &rarr;</a></div>`:''}
         ${(d.attachments&&d.attachments.length)?`<div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:2px">${d.attachments.map(a=>`<a href="${a.url}" target="_blank" onclick="event.stopPropagation()" class="att-chip" title="${a.url}">&#128206; ${a.name}</a>`).join('')}</div>`:''}
@@ -908,9 +929,9 @@ function renderCharts() {
   STAGES.forEach(s => { stageData[STAGE_LABELS[s]] = deals.filter(d=>d.stage===s).length; });
   if (chartType) chartType.destroy(); if (chartStage) chartStage.destroy(); if (chartPipelineRev) chartPipelineRev.destroy();
   const c1 = document.getElementById('chart-type');
-  if (c1) chartType = new Chart(c1, {type:'doughnut',data:{labels:Object.keys(types),datasets:[{data:Object.values(types),backgroundColor:['#3b82f6','#8b5cf6','#f59e0b','#16a34a']}]},options:{plugins:{legend:{position:'bottom',labels:{font:{size:10}}}},maintainAspectRatio:false}});
+  if (c1) chartType = new Chart(c1, {type:'doughnut',data:{labels:Object.keys(types),datasets:[{data:Object.values(types),backgroundColor:['#3b82f6','#8b5cf6','#f59e0b','#16a34a']}]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{size:10}}}},maintainAspectRatio:false}});
   const c2 = document.getElementById('chart-stage');
-  if (c2) chartStage = new Chart(c2, {type:'bar',data:{labels:Object.keys(stageData),datasets:[{data:Object.values(stageData),backgroundColor:Object.values(STAGE_COLORS)}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}},x:{ticks:{font:{size:9}}}},maintainAspectRatio:false}});
+  if (c2) chartStage = new Chart(c2, {type:'bar',data:{labels:Object.keys(stageData),datasets:[{data:Object.values(stageData),backgroundColor:Object.values(STAGE_COLORS)}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}},x:{ticks:{font:{size:9}}}},maintainAspectRatio:false}});
   // Mini revenue by partner chart
   const c3 = document.getElementById('chart-pipeline-rev');
   if (c3) {
@@ -918,7 +939,7 @@ function renderCharts() {
       const dv = d.dealValue || 0;
       return { org: d.org, rev: dv * (STAGE_PROB[d.stage]||0) };
     }).filter(r => r.rev > 0).sort((a,b) => b.rev - a.rev);
-    chartPipelineRev = new Chart(c3, {type:'bar',data:{labels:revData.map(r=>r.org),datasets:[{data:revData.map(r=>r.rev),backgroundColor:'#3b82f6'}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{callback:v=>'$'+(v/1000).toFixed(0)+'k',font:{size:9}}},y:{ticks:{font:{size:9}}}},maintainAspectRatio:false}});
+    chartPipelineRev = new Chart(c3, {type:'bar',data:{labels:revData.map(r=>r.org),datasets:[{data:revData.map(r=>r.rev),backgroundColor:'#3b82f6'}]},options:{responsive:true,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{callback:v=>'$'+(v/1000).toFixed(0)+'k',font:{size:9}}},y:{ticks:{font:{size:9}}}},maintainAspectRatio:false}});
   }
 }
 
@@ -1037,9 +1058,9 @@ function populateVaultSelect() {
 }
 
 // DEAL MODAL
-function openAddDeal() { ['f-id','f-org','f-desc','f-contact','f-next','f-date','f-notes','f-learners','f-fyilink','f-deal-value'].forEach(id=>document.getElementById(id).value=''); document.getElementById('f-type').value='Education'; document.getElementById('f-stage').value='Conversation'; document.getElementById('f-priority').value='High'; document.getElementById('f-owner').value=''; document.getElementById('f-deal-structure').value='Per-Student'; Array.from(document.getElementById('f-products').options).forEach(o=>o.selected=false); document.getElementById('btn-delete').style.display='none'; document.getElementById('modal-title').textContent='Add Opportunity'; _dealAttachments=[]; renderDealAttachments(); populateOwnerSelect(); populateVaultSelect(); document.getElementById('deal-modal').classList.add('show'); }
-function openEditDeal(id) { const d=DATA.deals.find(x=>x.id===id); if(!d) return; document.getElementById('modal-title').textContent='Edit: '+d.org; document.getElementById('f-id').value=d.id; document.getElementById('f-org').value=d.org; document.getElementById('f-type').value=d.type; document.getElementById('f-desc').value=d.desc||''; document.getElementById('f-stage').value=d.stage; document.getElementById('f-priority').value=d.priority; document.getElementById('f-contact').value=d.contact||''; document.getElementById('f-next').value=d.nextStep||''; document.getElementById('f-date').value=d.nextDate||''; document.getElementById('f-notes').value=d.notes||''; document.getElementById('f-learners').value=d.learners||''; document.getElementById('f-fyilink').value=d.fyiLink||''; document.getElementById('f-deal-structure').value=d.dealStructure||'Per-Student'; document.getElementById('f-deal-value').value=d.dealValue||''; populateOwnerSelect(); document.getElementById('f-owner').value=d.owner||''; Array.from(document.getElementById('f-products').options).forEach(o=>{o.selected=d.products&&d.products.includes(o.value);}); _dealAttachments=JSON.parse(JSON.stringify(d.attachments||[])); renderDealAttachments(); populateVaultSelect(); document.getElementById('btn-delete').style.display='block'; document.getElementById('deal-modal').classList.add('show'); }
-function saveDeal() { const id=document.getElementById('f-id').value; const products=Array.from(document.getElementById('f-products').selectedOptions).map(o=>o.value); const dd={org:document.getElementById('f-org').value,type:document.getElementById('f-type').value,desc:document.getElementById('f-desc').value,stage:document.getElementById('f-stage').value,priority:document.getElementById('f-priority').value,owner:document.getElementById('f-owner').value,contact:document.getElementById('f-contact').value,nextStep:document.getElementById('f-next').value,nextDate:document.getElementById('f-date').value,notes:document.getElementById('f-notes').value,learners:parseInt(document.getElementById('f-learners').value)||0,fyiLink:document.getElementById('f-fyilink').value,dealStructure:document.getElementById('f-deal-structure').value,dealValue:parseFloat(document.getElementById('f-deal-value').value)||0,products,attachments:_dealAttachments}; if(id){const deal=DATA.deals.find(d=>d.id===id);Object.assign(deal,dd);deal.activity=deal.activity||[];deal.activity.unshift({date:new Date().toISOString().slice(0,10),text:'Updated deal details'});}else{dd.id='d'+Date.now();dd.activity=[{date:new Date().toISOString().slice(0,10),text:'Created opportunity'}];DATA.deals.push(dd);} saveData(); closeModal('deal-modal'); render(); }
+function openAddDeal() { ['f-id','f-org','f-desc','f-contact','f-sponsor','f-next','f-date','f-notes','f-learners','f-fyilink','f-deal-value'].forEach(id=>document.getElementById(id).value=''); document.getElementById('f-type').value='Education'; document.getElementById('f-stage').value='Conversation'; document.getElementById('f-priority').value='High'; document.getElementById('f-owner').value=''; document.getElementById('f-deal-structure').value='Per-Student'; Array.from(document.getElementById('f-products').options).forEach(o=>o.selected=false); document.getElementById('btn-delete').style.display='none'; document.getElementById('modal-title').textContent='Add Opportunity'; _dealAttachments=[]; renderDealAttachments(); populateOwnerSelect(); populateVaultSelect(); document.getElementById('deal-modal').classList.add('show'); }
+function openEditDeal(id) { const d=DATA.deals.find(x=>x.id===id); if(!d) return; document.getElementById('modal-title').textContent='Edit: '+d.org; document.getElementById('f-id').value=d.id; document.getElementById('f-org').value=d.org; document.getElementById('f-type').value=d.type; document.getElementById('f-desc').value=d.desc||''; document.getElementById('f-stage').value=d.stage; document.getElementById('f-priority').value=d.priority; document.getElementById('f-contact').value=d.contact||''; document.getElementById('f-sponsor').value=d.sponsor||''; document.getElementById('f-next').value=d.nextStep||''; document.getElementById('f-date').value=d.nextDate||''; document.getElementById('f-notes').value=d.notes||''; document.getElementById('f-learners').value=d.learners||''; document.getElementById('f-fyilink').value=d.fyiLink||''; document.getElementById('f-deal-structure').value=d.dealStructure||'Per-Student'; document.getElementById('f-deal-value').value=d.dealValue||''; populateOwnerSelect(); document.getElementById('f-owner').value=d.owner||''; Array.from(document.getElementById('f-products').options).forEach(o=>{o.selected=d.products&&d.products.includes(o.value);}); _dealAttachments=JSON.parse(JSON.stringify(d.attachments||[])); renderDealAttachments(); populateVaultSelect(); document.getElementById('btn-delete').style.display='block'; document.getElementById('deal-modal').classList.add('show'); }
+function saveDeal() { const id=document.getElementById('f-id').value; const products=Array.from(document.getElementById('f-products').selectedOptions).map(o=>o.value); const dd={org:document.getElementById('f-org').value,type:document.getElementById('f-type').value,desc:document.getElementById('f-desc').value,stage:document.getElementById('f-stage').value,priority:document.getElementById('f-priority').value,owner:document.getElementById('f-owner').value,contact:document.getElementById('f-contact').value,sponsor:document.getElementById('f-sponsor').value,nextStep:document.getElementById('f-next').value,nextDate:document.getElementById('f-date').value,notes:document.getElementById('f-notes').value,learners:parseInt(document.getElementById('f-learners').value)||0,fyiLink:document.getElementById('f-fyilink').value,dealStructure:document.getElementById('f-deal-structure').value,dealValue:parseFloat(document.getElementById('f-deal-value').value)||0,products,attachments:_dealAttachments}; if(id){const deal=DATA.deals.find(d=>d.id===id);Object.assign(deal,dd);deal.activity=deal.activity||[];deal.activity.unshift({date:new Date().toISOString().slice(0,10),text:'Updated deal details'});}else{dd.id='d'+Date.now();dd.activity=[{date:new Date().toISOString().slice(0,10),text:'Created opportunity'}];DATA.deals.push(dd);} saveData(); closeModal('deal-modal'); render(); }
 function deleteDeal() { const id=document.getElementById('f-id').value; if(id&&confirm('Remove this opportunity?')){DATA.deals=DATA.deals.filter(d=>d.id!==id);saveData();closeModal('deal-modal');render();} }
 
 // PERSON MODAL
@@ -1166,7 +1187,9 @@ function renderPrep() {
     <div class="prep-card"><h3>${d.org}</h3><div class="sub">${d.type} &bull; ${STAGE_LABELS[d.stage]} &bull; ${d.priority} Priority &bull; Owner: ${d.owner||'—'}</div>
       <div class="products" style="margin-top:8px">${(d.products||[]).map(p=>`<span class="product-tag">${p}</span>`).join(' ')}</div>
       <p style="margin-top:10px;font-size:13px">${d.desc||''}</p>
-      ${d.learners?`<p style="margin-top:6px;font-size:13px"><strong>Estimated learners:</strong> ${d.learners.toLocaleString()}</p>`:''}
+      ${d.sponsor?`<p style="margin-top:6px;font-size:13px"><strong>Executive Sponsor:</strong> ${d.sponsor}</p>`:''}
+      ${d.contact?`<p style="margin-top:4px;font-size:13px"><strong>Contact:</strong> ${d.contact}</p>`:''}
+      ${d.learners?`<p style="margin-top:4px;font-size:13px"><strong>Estimated learners:</strong> ${d.learners.toLocaleString()}</p>`:''}
     </div>
     <div class="wr-grid">
       <div class="prep-card"><div class="prep-section"><h4>Status & Next Steps</h4><p><strong>Next:</strong> ${d.nextStep||'Not set'}</p>${d.nextDate?`<p><strong>Date:</strong> ${d.nextDate}</p>`:''}<p style="margin-top:8px"><strong>Notes:</strong> ${d.notes||'None'}</p></div></div>

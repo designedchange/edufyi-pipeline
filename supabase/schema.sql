@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS deals (
   priority TEXT DEFAULT 'High',
   owner TEXT DEFAULT '',
   contact TEXT DEFAULT '',
+  sponsor TEXT DEFAULT '',
   next_step TEXT DEFAULT '',
   next_date TEXT DEFAULT '',
   products JSONB DEFAULT '[]'::jsonb,
